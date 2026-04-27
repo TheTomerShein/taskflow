@@ -1,0 +1,67 @@
+<!DOCTYPE html>
+<html xmlns="http://www.w3.org/1999/xhtml"
+      xmlns:h="jakarta.faces.html"
+      xmlns:f="jakarta.faces.core"
+      xmlns:p="http://primefaces.org/ui"
+      xmlns:ui="jakarta.faces.facelets">
+
+<f:view>
+    <h:head>
+        <title>TaskFlow - #{projectBean.currentProject.name}</title>
+    </h:head>
+    <h:body>
+        <ui:composition template="/WEB-INF/templates/mainTemplate.xhtml"> <!-- אם יש לך template -->
+
+            <f:metadata>
+                <f:viewParam name="projectId" value="#{projectBean.projectId}" required="true"/>
+                <f:viewAction action="#{projectBean.loadProject}"/>
+            </f:metadata>
+
+            <p:growl id="growl" sticky="true"/>
+
+            <h:form id="projectForm">
+
+                <p:panel header="פרויקט: #{projectBean.currentProject.name}" style="margin: 20px;">
+                    <p>
+                        <strong>תיאור:</strong> #{projectBean.currentProject.description}
+                    </p>
+
+                    <!-- יצירת Board חדש -->
+                    <p:panel header="יצירת Board חדש" style="margin-bottom: 25px;">
+                        <p:inputText value="#{projectBean.newBoardName}"
+                                     placeholder="שם ה-Board (למשל: Sprint 12)"
+                                     style="width: 350px;"/>
+                        <p:commandButton value="צור Board"
+                                         action="#{projectBean.createBoard}"
+                                         update="boardsPanel growl"
+                                         icon="pi pi-plus"/>
+                    </p:panel>
+
+                    <!-- רשימת Boards -->
+                    <h:panelGroup id="boardsPanel">
+                        <h2>Boards בפרויקט</h2>
+                        <p:dataGrid value="#{projectBean.boards}" var="board" columns="3"
+                                    emptyMessage="אין Boards בפרויקט זה עדיין.">
+
+                            <p:panel header="#{board.name}" style="height: 170px; cursor: pointer;">
+                                <p>
+                                    <strong>משימות:</strong> #{board.tasks.size()}<br/>
+                                    <small>נוצר: #{board.createdAt}</small>
+                                </p>
+                                <p:commandButton value="פתח Kanban"
+                                                 action="#{projectBean.navigateToKanban(board.id)}"
+                                                 styleClass="ui-button-info"
+                                                 icon="pi pi-arrow-right"/>
+                            </p:panel>
+                        </p:dataGrid>
+                    </h:panelGroup>
+
+                    <p:commandButton value="← חזרה ל-Dashboard"
+                                     action="dashboard?faces-redirect=true"
+                                     style="margin-top: 20px;"/>
+                </p:panel>
+            </h:form>
+        </ui:composition>
+    </h:body>
+</f:view>
+</html>

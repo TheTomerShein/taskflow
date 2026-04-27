@@ -1,0 +1,115 @@
+<!DOCTYPE html>
+<html xmlns="http://www.w3.org/1999/xhtml"
+      xmlns:h="jakarta.faces.html"
+      xmlns:f="jakarta.faces.core"
+      xmlns:p="http://primefaces.org/ui"
+      xmlns:ui="jakarta.faces.facelets">
+
+<f:view>
+    <h:head>
+        <title>Kanban Board</title>
+        <style>
+            .kanban-column { min-height: 550px; border: 2px dashed #ccc; margin: 5px; padding: 10px; }
+            .task-card { margin-bottom: 8px; cursor: move; }
+        </style>
+    </h:head>
+    <h:body>
+        <ui:composition template="/WEB-INF/templates/mainTemplate.xhtml">
+
+            <f:metadata>
+                <f:viewParam name="boardId" value="#{kanbanBean.currentBoardId}" required="true"/>
+                <f:viewAction action="#{kanbanBean.loadTasks}"/>
+            </f:metadata>
+
+            <h:form id="kanbanForm">
+
+                <p:growl id="growl" sticky="true"/>
+
+                <div class="flex justify-content-between">
+                    <h1>Kanban Board (Board ID: #{kanbanBean.currentBoardId})</h1>
+                    <p:commandButton value="← חזרה לפרויקט"
+                                     action="project?faces-redirect=true&amp;projectId=#{projectBean.currentProject.id}"
+                                     rendered="#{not empty projectBean.currentProject}"/>
+                </div>
+
+                <p:panelGrid columns="3" style="width: 100%;" columnClasses="kanban-column">
+
+                    <!-- TODO Column -->
+                    <p:panel header="To Do" styleClass="kanban-column">
+                        <p:commandButton value="+ Add Task" icon="pi pi-plus"
+                                         onclick="PF('addTaskDialog').show(); return false;"
+                                         styleClass="mb-3 w-full"/>
+
+                        <p:repeat id="todoRepeat" value="#{kanbanBean.todoTasks}" var="task">
+                            <p:panel id="taskCard" styleClass="task-card ui-widget ui-widget-content"
+                                     header="#{task.title}" draggable="true">
+                                <p:outputText value="#{task.description}"/>
+                            </p:panel>
+                        </p:repeat>
+
+                        <p:droppable id="todoColumn" onDrop="onTaskDrop" tolerance="touch"/>
+                    </p:panel>
+
+                    <!-- In Progress Column -->
+                    <p:panel header="In Progress" styleClass="kanban-column">
+                        <p:commandButton value="+ Add Task" icon="pi pi-plus"
+                                         onclick="PF('addTaskDialog').show(); return false;"
+                                         styleClass="mb-3 w-full"/>
+
+                        <p:repeat id="inProgressRepeat" value="#{kanbanBean.inProgressTasks}" var="task">
+                            <p:panel id="taskCard" styleClass="task-card ui-widget ui-widget-content"
+                                     header="#{task.title}" draggable="true">
+                                <p:outputText value="#{task.description}"/>
+                            </p:panel>
+                        </p:repeat>
+
+                        <p:droppable id="inProgressColumn" onDrop="onTaskDrop" tolerance="touch"/>
+                    </p:panel>
+
+                    <!-- Done Column -->
+                    <p:panel header="Done" styleClass="kanban-column">
+                        <p:commandButton value="+ Add Task" icon="pi pi-plus"
+                                         onclick="PF('addTaskDialog').show(); return false;"
+                                         styleClass="mb-3 w-full"/>
+
+                        <p:repeat id="doneRepeat" value="#{kanbanBean.doneTasks}" var="task">
+                            <p:panel id="taskCard" styleClass="task-card ui-widget ui-widget-content"
+                                     header="#{task.title}" draggable="true">
+                                <p:outputText value="#{task.description}"/>
+                            </p:panel>
+                        </p:repeat>
+
+                        <p:droppable id="doneColumn" onDrop="onTaskDrop" tolerance="touch"/>
+                    </p:panel>
+                </p:panelGrid>
+
+                <!-- Add Task Modal -->
+                <p:dialog id="addTaskDialog" widgetVar="addTaskDialog" header="משימה חדשה" modal="true" width="450">
+                    <h:panelGrid columns="1" style="width: 100%">
+                        <p:outputLabel value="כותרת"/>
+                        <p:inputText value="#{kanbanBean.newTaskTitle}" required="true" style="width: 100%"/>
+
+                        <p:outputLabel value="תיאור"/>
+                        <p:inputTextarea value="#{kanbanBean.newTaskDescription}" rows="4" style="width: 100%"/>
+                    </h:panelGrid>
+
+                    <f:facet name="footer">
+                        <p:commandButton value="צור משימה"
+                                         action="#{kanbanBean.createNewTask}"
+                                         update="kanbanForm growl"
+                                         oncomplete="if (!validationFailed) PF('addTaskDialog').hide();"/>
+                        <p:commandButton value="ביטול" type="button" onclick="PF('addTaskDialog').hide()"/>
+                    </f:facet>
+                </p:dialog>
+            </h:form>
+
+            <!-- JS for Drag & Drop (PrimeFaces מטפל בזה אוטומטית) -->
+            <h:outputScript>
+                function onTaskDrop(event) {
+                // PrimeFaces יקרא אוטומטית ל-onTaskDrop ב-KanbanBean
+                }
+            </h:outputScript>
+        </ui:composition>
+    </h:body>
+</f:view>
+</html>

@@ -1,0 +1,109 @@
+<!DOCTYPE html>
+<html xmlns="http://www.w3.org/1999/xhtml"
+      xmlns:h="http://xmlns.jcp.org/jsf/html"
+      xmlns:p="http://primefaces.org/ui"
+      xmlns:f="http://xmlns.jcp.org/jsf/core">
+
+<h:head>
+    <title>TaskFlow - Dashboard</title>
+    <style>
+        .dashboard-container {
+            max-width: 1200px;
+            margin: 20px auto;
+            padding: 0 20px;
+        }
+        .welcome-header {
+            margin-bottom: 30px;
+        }
+    </style>
+</h:head>
+
+<h:body>
+    <div class="dashboard-container">
+
+        <h:form>
+            <!-- Header -->
+            <p:panel styleClass="welcome-header">
+                <div style="display: flex; justify-content: space-between; align-items: center;">
+                    <div>
+                        <h2 style="margin: 0;">Welcome back, <strong>#{authBean.currentUser.username}</strong>!</h2>
+                        <p style="margin: 5px 0 0 0; color: #666;">Manage your projects and tasks</p>
+                    </div>
+                    <p:commandButton value="Logout"
+                                     action="#{authBean.logout}"
+                                     icon="pi pi-sign-out"
+                                     ajax="false"
+                                     immediate="true"
+                                     styleClass="p-button-danger p-button-sm"/>
+                </div>
+            </p:panel>
+
+            <!-- My Projects -->
+            <p:panel header="My Projects">
+                <p:dataTable value="#{dashboardBean.projects}"
+                             var="project"
+                             emptyMessage="You don't have any projects yet. Create your first one below!"
+                             paginator="true"
+                             rows="10"
+                             paginatorTemplate="{CurrentPageReport} {FirstPageLink} {PreviousPageLink} {PageLinks} {NextPageLink} {LastPageLink}">
+
+                    <p:column headerText="Project Name" sortBy="#{project.name}">
+                        <h:outputText value="#{project.name}" style="font-weight: bold;"/>
+                    </p:column>
+
+                    <p:column headerText="Description">
+                        <h:outputText value="#{project.description}" />
+                    </p:column>
+
+                    <p:column headerText="Created" style="width: 140px;">
+                        <h:outputText value="#{project.createdAt}">
+                            <f:convertDateTime type="localDateTime" pattern="dd/MM/yyyy"/>
+                        </h:outputText>
+                    </p:column>
+
+                    <p:column headerText="Actions" style="width: 120px; text-align: center;">
+                        <p:link value="Open Board"
+                                         action="kanban?faces-redirect=true"
+                                         icon="pi pi-external-link"
+                                         ajax="false"
+                                         immediate="true"
+                                         styleClass="p-button-outlined p-button-sm">
+                            <f:param name="boardId" value="#{board.id}" />
+                        </p:link>
+                    </p:column>
+                </p:dataTable>
+            </p:panel>
+
+            <!-- Create New Project -->
+            <p:panel header="Create New Project" style="margin-top: 30px; max-width: 600px;">
+                <div class="p-fluid">
+                    <div class="p-field">
+                        <p:outputLabel for="name" value="Project Name"/>
+                        <p:inputText id="name"
+                                     value="#{dashboardBean.newProjectName}"
+                                     required="true"
+                                     placeholder="Enter project name"/>
+                    </div>
+
+                    <div class="p-field" style="margin-top: 15px;">
+                        <p:outputLabel for="desc" value="Description (optional)"/>
+                        <p:inputTextarea id="desc"
+                                         value="#{dashboardBean.newProjectDescription}"
+                                         rows="3"
+                                         placeholder="Describe your project..."/>
+                    </div>
+
+                    <div style="margin-top: 20px;">
+                        <p:commandButton value="Create Project"
+                                         action="#{dashboardBean.createProject}"
+                                         icon="pi pi-plus"
+                                         update="@form"
+                                         styleClass="p-button-success"/>
+                    </div>
+                </div>
+            </p:panel>
+
+        </h:form>
+    </div>
+</h:body>
+</html>
