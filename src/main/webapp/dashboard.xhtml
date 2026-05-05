@@ -62,13 +62,13 @@
                     </p:column>
 
                     <p:column headerText="Actions" style="width: 120px; text-align: center;">
-                        <p:link value="Open Board"
-                                         action="kanban?faces-redirect=true"
+                        <p:link value="Open Project"
                                          icon="pi pi-external-link"
+                                         outcome="project"
                                          ajax="false"
                                          immediate="true"
                                          styleClass="p-button-outlined p-button-sm">
-                            <f:param name="boardId" value="#{board.id}" />
+                            <f:param name="projectId" value="#{project.id}" />
                         </p:link>
                     </p:column>
                 </p:dataTable>

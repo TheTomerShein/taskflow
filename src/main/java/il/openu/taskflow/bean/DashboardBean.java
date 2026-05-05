@@ -4,17 +4,20 @@ import il.openu.taskflow.entity.Project;
 import il.openu.taskflow.entity.User;
 import il.openu.taskflow.service.ProjectService;
 import jakarta.annotation.PostConstruct;
-import jakarta.enterprise.context.RequestScoped;
+import jakarta.faces.view.ViewScoped;
 import jakarta.faces.application.FacesMessage;
 import jakarta.faces.context.FacesContext;
 import jakarta.inject.Inject;
 import jakarta.inject.Named;
 
+import java.io.Serializable;
 import java.util.List;
 
+import java.util.logging.Logger;
+
 @Named
-@RequestScoped
-public class DashboardBean {
+@ViewScoped
+public class DashboardBean implements Serializable {
 
     @Inject
     private ProjectService projectService;
@@ -25,6 +28,7 @@ public class DashboardBean {
     private List<Project> projects;
     private String newProjectName;
     private String newProjectDescription;
+    private static final Logger LOGGER = Logger.getLogger(DashboardBean.class.getName());
 
     @PostConstruct
     public void init() {
@@ -51,9 +55,23 @@ public class DashboardBean {
     }
 
     // Getters & Setters
-    public List<Project> getProjects() { return projects; }
-    public String getNewProjectName() { return newProjectName; }
-    public void setNewProjectName(String newProjectName) { this.newProjectName = newProjectName; }
-    public String getNewProjectDescription() { return newProjectDescription; }
-    public void setNewProjectDescription(String newProjectDescription) { this.newProjectDescription = newProjectDescription; }
+    public List<Project> getProjects() {
+        return projects;
+    }
+
+    public String getNewProjectName() {
+        return newProjectName;
+    }
+
+    public void setNewProjectName(String newProjectName) {
+        this.newProjectName = newProjectName;
+    }
+
+    public String getNewProjectDescription() {
+        return newProjectDescription;
+    }
+
+    public void setNewProjectDescription(String newProjectDescription) {
+        this.newProjectDescription = newProjectDescription;
+    }
 }

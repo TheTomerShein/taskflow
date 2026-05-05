@@ -10,6 +10,7 @@ import jakarta.inject.Named;
 import jakarta.servlet.http.HttpSession;
 import jakarta.faces.context.FacesContext;
 import java.io.Serializable;
+import java.util.logging.Logger;
 
 @Named
 @SessionScoped
@@ -26,6 +27,8 @@ public class AuthBean implements Serializable {
     // ==================== LOGIN ====================
     public String login() {
         User user = userService.login(username, password);
+
+        System.out.println("dasokdsoakodsok");
 
         if (user != null) {
             this.currentUser = user;
