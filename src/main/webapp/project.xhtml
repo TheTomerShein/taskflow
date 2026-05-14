@@ -78,6 +78,11 @@
                     </div>
 
                     <div style="display: flex; gap: 12px;">
+                        <p:button value="Activity Log" icon="pi pi-history" styleClass="ui-button-warning"
+                            outcome="activity?faces-redirect=true">
+                            <f:param name="projectId" value="#{projectBean.projectId}" />
+                        </p:button>
+
                         <p:commandButton value="Dashboard" icon="pi pi-arrow-left" styleClass="ui-button-secondary"
                             action="dashboard?faces-redirect=true" />
 
@@ -113,12 +118,7 @@
                                     </div>
 
                                     <div style="display: flex; gap: 8px;">
-                                        <h:link outcome="activity" value="Activity Log"
-                                            styleClass="ui-button ui-widget ui-state-default ui-corner-all ui-button-warning"
-                                            style="padding: 8px 20px; text-decoration: none; display: inline-block;">
-                                            <f:param name="projectId" value="#{projectBean.projectId}" />
-                                            <i class="pi pi-history" style="margin-right: 8px;"></i>
-                                        </h:link>
+
 
                                         <h:link outcome="kanban" value="פתח Kanban"
                                             styleClass="ui-button ui-widget ui-state-default ui-corner-all ui-button-primary"
