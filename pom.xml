@@ -49,6 +49,7 @@
       <groupId>org.eclipse.persistence</groupId>
       <artifactId>eclipselink</artifactId>
       <version>4.0.2</version>
+      <scope>provided</scope>
     </dependency>
 
     <!-- JMS API -->
@@ -86,6 +87,22 @@
         <configuration>
           <source>11</source>
           <target>11</target>
+        </configuration>
+      </plugin>
+      
+      <!-- Payara Micro Plugin for easy running -->
+      <plugin>
+        <groupId>fish.payara.maven.plugins</groupId>
+        <artifactId>payara-micro-maven-plugin</artifactId>
+        <version>2.2</version>
+        <configuration>
+          <payaraVersion>6.2024.3</payaraVersion>
+          <deployWar>true</deployWar>
+          <commandLineOptions>
+            <option>
+              <key>--autoBindHttp</key>
+            </option>
+          </commandLineOptions>
         </configuration>
       </plugin>
     </plugins>

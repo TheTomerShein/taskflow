@@ -23,6 +23,10 @@ public class ActivityLog {
     @JoinColumn(name = "task_id")
     private Task task;
 
+    @ManyToOne
+    @JoinColumn(name = "board_id")
+    private Board board;
+
     @Enumerated(EnumType.STRING)
     @Column(name = "action_type", nullable = false, length = 50)
     private ActionType actionType;
@@ -56,6 +60,15 @@ public class ActivityLog {
     // Simple constructor for easy use
     public ActivityLog(Project project, User user, ActionType actionType, String details) {
         this.project = project;
+        this.user = user;
+        this.actionType = actionType;
+        this.details = details;
+    }
+
+    // Constructor with Board
+    public ActivityLog(Project project, Board board, User user, ActionType actionType, String details) {
+        this.project = project;
+        this.board = board;
         this.user = user;
         this.actionType = actionType;
         this.details = details;
@@ -101,6 +114,10 @@ public class ActivityLog {
     public Task getTask() { return task; }
 
     public void setTask(Task task) { this.task = task; }
+
+    public Board getBoard() { return board; }
+
+    public void setBoard(Board board) { this.board = board; }
 
     public ActionType getActionType() {
         return actionType;

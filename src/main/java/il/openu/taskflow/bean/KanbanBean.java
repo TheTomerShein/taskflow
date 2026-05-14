@@ -4,19 +4,24 @@ import il.openu.taskflow.entity.Board;
 import il.openu.taskflow.entity.Task;
 import il.openu.taskflow.repository.BoardRepository;
 import il.openu.taskflow.service.TaskService;
+import il.openu.taskflow.entity.Comment;
+import il.openu.taskflow.repository.CommentRepository;
+import il.openu.taskflow.repository.TaskRepository;
+import il.openu.taskflow.repository.UserRepository;
+import il.openu.taskflow.exception.UnauthorizedException;
 import jakarta.annotation.PostConstruct;
 import jakarta.faces.application.FacesMessage;
 import jakarta.faces.context.FacesContext;
+import jakarta.faces.component.UIComponent;
 import jakarta.faces.view.ViewScoped;
 import jakarta.inject.Inject;
 import jakarta.inject.Named;
-import org.primefaces.event.DragDropEvent;
+import jakarta.persistence.EntityNotFoundException;
+
 
 import java.io.Serializable;
 import java.util.ArrayList;
 import java.util.List;
-import java.util.regex.Matcher;
-import java.util.regex.Pattern;
 
 @Named
 @ViewScoped
@@ -33,6 +38,15 @@ public class KanbanBean implements Serializable {
     @Inject
     private BoardRepository boardRepository;
 
+    @Inject
+    private CommentRepository commentRepository;
+
+    @Inject
+    private UserRepository userRepository;
+
+    @Inject
+    private TaskRepository taskRepository;
+
     private List<Task> todoTasks = new ArrayList<>();
     private List<Task> inProgressTasks = new ArrayList<>();
     private List<Task> doneTasks = new ArrayList<>();
@@ -45,15 +59,24 @@ public class KanbanBean implements Serializable {
     private Task.TaskStatus newTaskStatus = Task.TaskStatus.TODO;
 
     private Task selectedTask;
+    private Long selectedAssigneeId;
+    private String newCommentText;
+    private List<Comment> selectedTaskComments = new ArrayList<>();
 
     @PostConstruct
     public void init() {
-        // Load tasks if boardId was already set via viewParam before PostConstruct
+        // Note: currentBoardId is set by the f:viewParam setter AFTER PostConstruct.
+        // The setter already calls loadTasks(), so we only need a fallback here
+        // in case the setter fires before PostConstruct (rare edge case).
         if (currentBoardId != null) {
             loadTasks();
         }
     }
 
+    /**
+     * Loads all tasks for the current board grouped by status.
+     * Called by the setCurrentBoardId() setter, which is invoked by f:viewParam.
+     */
     public void loadTasks() {
         if (currentBoardId != null && currentBoardId > 0) {
             todoTasks = taskService.getTasksByStatus(currentBoardId, Task.TaskStatus.TODO);
@@ -61,7 +84,7 @@ public class KanbanBean implements Serializable {
             doneTasks = taskService.getTasksByStatus(currentBoardId, Task.TaskStatus.DONE);
 
             if (currentBoard == null || !currentBoard.getId().equals(currentBoardId)) {
-                currentBoard = boardRepository.findById(currentBoardId);
+                currentBoard = boardRepository.findById(currentBoardId).orElse(null);
             }
         } else {
             todoTasks = new ArrayList<>();
@@ -84,16 +107,16 @@ public class KanbanBean implements Serializable {
             return;
         }
 
-        Task newTask = taskService.createTask(
-                newTaskTitle.trim(),
-                newTaskDescription != null ? newTaskDescription.trim() : "",
-                newTaskStatus != null ? newTaskStatus : Task.TaskStatus.TODO,
-                currentBoardId,
-                authBean.getCurrentUser().getId(),
-                null
-        );
+        try {
+            Task newTask = taskService.createTask(
+                    newTaskTitle.trim(),
+                    newTaskDescription != null ? newTaskDescription.trim() : "",
+                    newTaskStatus != null ? newTaskStatus : Task.TaskStatus.TODO,
+                    currentBoardId,
+                    authBean.getCurrentUser().getId(),
+                    null
+            );
 
-        if (newTask != null) {
             FacesContext.getCurrentInstance().addMessage(null,
                     new FacesMessage(FacesMessage.SEVERITY_INFO, "Task Created",
                             "Task '" + newTaskTitle + "' created successfully"));
@@ -102,86 +125,53 @@ public class KanbanBean implements Serializable {
             newTaskDescription = null;
             newTaskStatus = Task.TaskStatus.TODO;
             loadTasks();
-        } else {
+        } catch (EntityNotFoundException | UnauthorizedException e) {
             FacesContext.getCurrentInstance().addMessage(null,
-                    new FacesMessage(FacesMessage.SEVERITY_ERROR, "Error",
-                            "Failed to create task - make sure you are a member of the project"));
+                    new FacesMessage(FacesMessage.SEVERITY_ERROR, "Error", "Failed to create task: " + e.getMessage()));
         }
     }
 
-    public void onTaskDrop(DragDropEvent event) {
-        String dragId = event.getDragId();
-        String dropId = event.getDropId();
-
-        if (dragId == null || dropId == null) {
-            FacesContext.getCurrentInstance().addMessage(null,
-                    new FacesMessage(FacesMessage.SEVERITY_WARN, "Error", "Invalid drag/drop data"));
-            return;
-        }
-
+    public void onTaskDropFromJS() {
         if (authBean.getCurrentUser() == null) {
             FacesContext.getCurrentInstance().addMessage(null,
                     new FacesMessage(FacesMessage.SEVERITY_ERROR, "Error", "User not authenticated"));
             return;
         }
 
-        // Extract task ID from dragId (format: ...:taskCard_123 or just taskCard_123)
-        Long taskId = extractTaskIdFromDragId(dragId);
-        if (taskId == null) {
+        String taskIdStr = FacesContext.getCurrentInstance().getExternalContext().getRequestParameterMap().get("taskId");
+        String newStatusStr = FacesContext.getCurrentInstance().getExternalContext().getRequestParameterMap().get("newStatus");
+
+        if (taskIdStr == null || newStatusStr == null) {
             FacesContext.getCurrentInstance().addMessage(null,
-                    new FacesMessage(FacesMessage.SEVERITY_ERROR, "Error", "Invalid task identifier"));
+                    new FacesMessage(FacesMessage.SEVERITY_WARN, "Error", "Invalid drop data"));
             return;
         }
 
-        Task.TaskStatus newStatus = getStatusFromDropZone(dropId);
-        if (newStatus == null) {
-            FacesContext.getCurrentInstance().addMessage(null,
-                    new FacesMessage(FacesMessage.SEVERITY_WARN, "Error", "Invalid drop zone"));
-            return;
-        }
+        try {
+            Long taskId = Long.parseLong(taskIdStr);
+            Task.TaskStatus newStatus = Task.TaskStatus.valueOf(newStatusStr);
 
-        // Find the task to get its title for message
-        Task existingTask = findTaskById(taskId);
-        if (existingTask == null) {
-            FacesContext.getCurrentInstance().addMessage(null,
-                    new FacesMessage(FacesMessage.SEVERITY_ERROR, "Error", "Task not found"));
-            return;
-        }
+            Task existingTask = findTaskById(taskId);
+            if (existingTask == null) {
+                 FacesContext.getCurrentInstance().addMessage(null,
+                    new FacesMessage(FacesMessage.SEVERITY_ERROR, "Error", "Task not found in view"));
+                 return;
+            }
 
-        if (newStatus.equals(existingTask.getStatus())) {
-            // Dropped on same column - no change needed
-            return;
-        }
+            if (newStatus.equals(existingTask.getStatus())) {
+                return;
+            }
 
-        Task updatedTask = taskService.moveTask(taskId, newStatus, authBean.getCurrentUser().getId());
-
-        if (updatedTask != null) {
+            taskService.moveTask(taskId, newStatus, authBean.getCurrentUser().getId());
             loadTasks();
+
             FacesContext.getCurrentInstance().addMessage(null,
                     new FacesMessage(FacesMessage.SEVERITY_INFO, "Task Moved",
                             "Task '" + existingTask.getTitle() + "' moved to " + newStatus));
-        } else {
+        } catch (Exception e) {
             FacesContext.getCurrentInstance().addMessage(null,
-                    new FacesMessage(FacesMessage.SEVERITY_ERROR, "Error", "Move failed - insufficient permissions or task not found"));
+                    new FacesMessage(FacesMessage.SEVERITY_ERROR, "Error", "Move failed: " + e.getMessage()));
         }
-    }
-
-    /**
-     * Extracts task ID from a drag element client ID.
-     * Handles formats like: kanbanForm:todoColumn:taskCard_123 or just taskCard_123
-     */
-    private Long extractTaskIdFromDragId(String dragId) {
-        if (dragId == null) return null;
-        Pattern pattern = Pattern.compile("taskCard_(\\d+)");
-        Matcher matcher = pattern.matcher(dragId);
-        if (matcher.find()) {
-            try {
-                return Long.parseLong(matcher.group(1));
-            } catch (NumberFormatException e) {
-                return null;
-            }
-        }
-        return null;
     }
 
     private Task findTaskById(Long taskId) {
@@ -197,18 +187,58 @@ public class KanbanBean implements Serializable {
         return null;
     }
 
-    private Task.TaskStatus getStatusFromDropZone(String dropId) {
-        if (dropId == null) return null;
-        if (dropId.contains("todoColumn")) return Task.TaskStatus.TODO;
-        if (dropId.contains("inProgressColumn")) return Task.TaskStatus.IN_PROGRESS;
-        if (dropId.contains("doneColumn")) return Task.TaskStatus.DONE;
-        return null;
-    }
+
 
     public void viewTask(Task task) {
         this.selectedTask = task;
-        // Optional: reload task from DB for fresh data if needed
-        // this.selectedTask = taskService.findById(task.getId());
+        if (task.getAssignee() != null) {
+            this.selectedAssigneeId = task.getAssignee().getId();
+        } else {
+            this.selectedAssigneeId = null;
+        }
+        this.selectedTaskComments = commentRepository.findByTaskId(task.getId());
+        this.newCommentText = "";
+    }
+
+    public List<il.openu.taskflow.entity.User> getProjectMembers() {
+        if (currentBoard != null && currentBoard.getProject() != null) {
+            return new ArrayList<>(currentBoard.getProject().getMembers());
+        }
+        return new ArrayList<>();
+    }
+
+    public void updateTask() {
+        if (selectedTask == null) return;
+
+        // Capture old assignee ID before making changes (for change detection)
+        Long oldAssigneeId = (selectedTask.getAssignee() != null) ? selectedTask.getAssignee().getId() : null;
+
+        if (selectedAssigneeId != null && selectedAssigneeId > 0) {
+            il.openu.taskflow.entity.User assignee = userRepository.findById(selectedAssigneeId).orElse(null);
+            selectedTask.setAssignee(assignee);
+        } else {
+            selectedTask.setAssignee(null);
+        }
+
+        taskService.updateTask(selectedTask, authBean.getCurrentUser(), oldAssigneeId);
+        FacesContext.getCurrentInstance().addMessage(null,
+                new FacesMessage(FacesMessage.SEVERITY_INFO, "Success", "Task updated successfully"));
+        loadTasks();
+    }
+
+    public void addComment() {
+        if (selectedTask == null || newCommentText == null || newCommentText.trim().isEmpty()) return;
+
+        try {
+            taskService.addComment(selectedTask.getId(), authBean.getCurrentUser().getId(), newCommentText.trim());
+            this.selectedTaskComments = commentRepository.findByTaskId(selectedTask.getId());
+            this.newCommentText = "";
+            FacesContext.getCurrentInstance().addMessage(null,
+                    new FacesMessage(FacesMessage.SEVERITY_INFO, "Success", "Comment added"));
+        } catch (Exception e) {
+            FacesContext.getCurrentInstance().addMessage(null,
+                    new FacesMessage(FacesMessage.SEVERITY_ERROR, "Error", "Failed to add comment"));
+        }
     }
 
     public String goToProject() {
@@ -283,5 +313,25 @@ public class KanbanBean implements Serializable {
 
     public Task getSelectedTask() {
         return selectedTask;
+    }
+
+    public Long getSelectedAssigneeId() {
+        return selectedAssigneeId;
+    }
+
+    public void setSelectedAssigneeId(Long selectedAssigneeId) {
+        this.selectedAssigneeId = selectedAssigneeId;
+    }
+
+    public String getNewCommentText() {
+        return newCommentText;
+    }
+
+    public void setNewCommentText(String newCommentText) {
+        this.newCommentText = newCommentText;
+    }
+
+    public List<Comment> getSelectedTaskComments() {
+        return selectedTaskComments;
     }
 }

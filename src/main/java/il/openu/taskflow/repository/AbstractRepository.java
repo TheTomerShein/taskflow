@@ -4,6 +4,8 @@ import jakarta.persistence.EntityManager;
 import jakarta.persistence.PersistenceContext;
 import java.util.List;
 
+import java.util.Optional;
+
 public abstract class AbstractRepository<T> {
 
     protected Class<T> entityClass;
@@ -24,8 +26,8 @@ public abstract class AbstractRepository<T> {
         return em.merge(entity);
     }
 
-    public T findById(Long id) {
-        return em.find(entityClass, id);
+    public Optional<T> findById(Long id) {
+        return Optional.ofNullable(em.find(entityClass, id));
     }
 
     public List<T> findAll() {
@@ -38,9 +40,6 @@ public abstract class AbstractRepository<T> {
     }
 
     public void deleteById(Long id) {
-        T entity = findById(id);
-        if (entity != null) {
-            delete(entity);
-        }
+        findById(id).ifPresent(this::delete);
     }
 }

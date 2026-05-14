@@ -19,6 +19,9 @@
         <class>il.openu.taskflow.entity.Comment</class>
         <class>il.openu.taskflow.entity.ActivityLog</class>
 
+        <!-- Disable Level 2 Cache globally to fix stale data issues -->
+        <shared-cache-mode>NONE</shared-cache-mode>
+
         <properties>
             <!--><property name="jakarta.persistence.schema-generation.database.action" value="drop-and-create"/><!-->
             <property name="jakarta.persistence.schema-generation.database.action" value="none"/>

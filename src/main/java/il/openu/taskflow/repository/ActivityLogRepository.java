@@ -24,4 +24,15 @@ public class ActivityLogRepository extends AbstractRepository<ActivityLog> {
                 .setParameter("projectId", projectId)
                 .getResultList();
     }
+
+    /**
+     * Returns recent activity for a specific board.
+     * @param boardId ID of the board
+     * @return list of activity logs ordered by time (newest first)
+     */
+    public List<ActivityLog> findByBoardId(Long boardId) {
+        return em.createQuery("SELECT a FROM ActivityLog a WHERE a.board.id = :boardId ORDER BY a.createdAt DESC", ActivityLog.class)
+                .setParameter("boardId", boardId)
+                .getResultList();
+    }
 }

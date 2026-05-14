@@ -2,8 +2,10 @@ package il.openu.taskflow.service;
 
 import il.openu.taskflow.entity.*;
 import il.openu.taskflow.repository.*;
+import il.openu.taskflow.exception.UnauthorizedException;
 import jakarta.ejb.Stateless;
 import jakarta.inject.Inject;
+import jakarta.persistence.EntityNotFoundException;
 
 import java.util.List;
 
@@ -45,15 +47,13 @@ public class TaskService {
      */
     public Task createTask(String title, String description, Task.TaskStatus initialStatus,
                            Long boardId, Long createdById, Long assigneeId) {
-        Board board = boardRepository.findById(boardId);
-        User createdBy = userRepository.findById(createdById);
-
-        if (board == null || createdBy == null) {
-            return null;
-        }
+        Board board = boardRepository.findById(boardId)
+                .orElseThrow(() -> new EntityNotFoundException("Board not found"));
+        User createdBy = userRepository.findById(createdById)
+                .orElseThrow(() -> new EntityNotFoundException("User not found"));
 
         if (!isProjectMember(createdById, board.getProject().getId())) {
-            return null;
+            throw new UnauthorizedException("User is not a member of this project");
         }
 
         Task task = new Task();
@@ -64,13 +64,14 @@ public class TaskService {
         task.setCreatedBy(createdBy);
 
         if (assigneeId != null) {
-            User assignee = userRepository.findById(assigneeId);
+            User assignee = userRepository.findById(assigneeId)
+                    .orElseThrow(() -> new EntityNotFoundException("Assignee not found"));
             task.setAssignee(assignee);
         }
 
         Task savedTask = taskRepository.save(task);
 
-        createActivityLog(board.getProject(), createdBy, ActivityLog.ActionType.TASK_CREATED,
+        createActivityLog(board.getProject(), board, createdBy, ActivityLog.ActionType.TASK_CREATED,
                 "Task created: " + title, savedTask);
 
         jmsProducer.sendTaskEvent("TASK_CREATED", savedTask.getId(), createdById);
@@ -87,16 +88,14 @@ public class TaskService {
      * @return updated task or null if failed
      */
     public Task moveTask(Long taskId, Task.TaskStatus newStatus, Long userId) {
-        Task task = taskRepository.findById(taskId);
-        User user = userRepository.findById(userId);
-
-        if (task == null || user == null) {
-            return null;
-        }
+        Task task = taskRepository.findById(taskId)
+                .orElseThrow(() -> new EntityNotFoundException("Task not found"));
+        User user = userRepository.findById(userId)
+                .orElseThrow(() -> new EntityNotFoundException("User not found"));
 
         // Check if the user is a member of the project
         if (!isProjectMember(userId, task.getBoard().getProject().getId())) {
-            return null;
+            throw new UnauthorizedException("User is not a member of this project");
         }
 
         Task.TaskStatus oldStatus = task.getStatus();
@@ -105,7 +104,7 @@ public class TaskService {
         Task updatedTask = taskRepository.update(task);
 
         // Log the status change
-        createActivityLog(task.getBoard().getProject(), user, ActivityLog.ActionType.STATUS_CHANGED,
+        createActivityLog(task.getBoard().getProject(), task.getBoard(), user, ActivityLog.ActionType.STATUS_CHANGED,
                 "Task moved from " + oldStatus + " to " + newStatus, updatedTask);
 
         jmsProducer.sendTaskEvent("STATUS_CHANGED", taskId, userId);
@@ -122,16 +121,14 @@ public class TaskService {
      * @return the created comment or null if failed
      */
     public Comment addComment(Long taskId, Long userId, String content) {
-        Task task = taskRepository.findById(taskId);
-        User user = userRepository.findById(userId);
-
-        if (task == null || user == null) {
-            return null;
-        }
+        Task task = taskRepository.findById(taskId)
+                .orElseThrow(() -> new EntityNotFoundException("Task not found"));
+        User user = userRepository.findById(userId)
+                .orElseThrow(() -> new EntityNotFoundException("User not found"));
 
         // Check if the user is a member of the project
         if (!isProjectMember(userId, task.getBoard().getProject().getId())) {
-            return null;
+            throw new UnauthorizedException("User is not a member of this project");
         }
 
         Comment comment = new Comment();
@@ -142,7 +139,7 @@ public class TaskService {
         Comment savedComment = commentRepository.save(comment);
 
         // Create activity log
-        createActivityLog(task.getBoard().getProject(), user, ActivityLog.ActionType.COMMENT_ADDED,
+        createActivityLog(task.getBoard().getProject(), task.getBoard(), user, ActivityLog.ActionType.COMMENT_ADDED,
                 "Comment added to task: " + task.getTitle(), task);
 
         jmsProducer.sendTaskEvent("COMMENT_ADDED", taskId, userId);
@@ -159,11 +156,41 @@ public class TaskService {
      * @param details    a descriptive string of the action
      * @param task       the task related to the activity
      */
-    private void createActivityLog(Project project, User user, ActivityLog.ActionType actionType,
+    private void createActivityLog(Project project, Board board, User user, ActivityLog.ActionType actionType,
                                    String details, Task task) {
-        ActivityLog log = new ActivityLog(project, user, actionType, details);
+        ActivityLog log = new ActivityLog(project, board, user, actionType, details);
         log.setTask(task);                    // now works because we added the field
         activityLogRepository.save(log);
+    }
+
+    /**
+     * Updates a task's details (assignee, description, due date) and logs changes.
+     *
+     * @param task           the task to update (already modified by the bean)
+     * @param user           the user who performed the update
+     * @param oldAssigneeId  the previous assignee ID (null if none), used for change detection
+     */
+    public Task updateTask(Task task, User user, Long oldAssigneeId) {
+        Board board = task.getBoard();
+        Project project = board.getProject();
+
+        // Detect assignee change
+        Long newAssigneeId = (task.getAssignee() != null) ? task.getAssignee().getId() : null;
+        boolean assigneeChanged = (oldAssigneeId == null && newAssigneeId != null)
+                || (oldAssigneeId != null && !oldAssigneeId.equals(newAssigneeId));
+
+        Task updatedTask = taskRepository.update(task);
+
+        if (assigneeChanged) {
+            String assigneeName = (task.getAssignee() != null) ? task.getAssignee().getUsername() : "Unassigned";
+            createActivityLog(project, board, user, ActivityLog.ActionType.TASK_ASSIGNED,
+                    "Task '" + task.getTitle() + "' assigned to " + assigneeName, updatedTask);
+        } else {
+            createActivityLog(project, board, user, ActivityLog.ActionType.TASK_UPDATED,
+                    "Task updated: " + task.getTitle(), updatedTask);
+        }
+
+        return updatedTask;
     }
 
     /**
@@ -174,10 +201,9 @@ public class TaskService {
      * @return true if the user is a member of the project, false otherwise
      */
     private boolean isProjectMember(Long userId, Long projectId) {
-        Project project = projectRepository.findById(projectId);
-        if (project == null) return false;
-        return project.getMembers().stream()
-                .anyMatch(u -> u.getId().equals(userId));
+        return projectRepository.findById(projectId)
+                .map(project -> project.getMembers().stream().anyMatch(u -> u.getId().equals(userId)))
+                .orElse(false);
     }
 
     /**

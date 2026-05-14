@@ -3,7 +3,7 @@ package il.openu.taskflow.bean;
 import il.openu.taskflow.entity.Board;
 import il.openu.taskflow.entity.Project;
 import il.openu.taskflow.repository.BoardRepository;
-import il.openu.taskflow.repository.ProjectRepository;
+import il.openu.taskflow.service.BoardService;
 import il.openu.taskflow.service.ProjectService;
 import jakarta.annotation.PostConstruct;
 import jakarta.faces.view.ViewScoped;
@@ -26,6 +26,9 @@ public class ProjectBean implements Serializable {
     private BoardRepository boardRepository;
 
     @Inject
+    private BoardService boardService;
+
+    @Inject
     private AuthBean authBean;
 
     private Long projectId;
@@ -42,7 +45,7 @@ public class ProjectBean implements Serializable {
 
     public void loadProject() {
         if (projectId != null) {
-            currentProject = projectService.findById(projectId);
+            currentProject = projectService.findById(projectId).orElse(null);
             if (currentProject != null) {
                 boards = boardRepository.findByProjectId(projectId);
             } else {
@@ -59,11 +62,7 @@ public class ProjectBean implements Serializable {
             return null;
         }
 
-        Board board = new Board();
-        board.setName(newBoardName.trim());
-        board.setProject(currentProject);
-
-        boardRepository.save(board);
+        boardService.createBoard(newBoardName.trim(), currentProject, authBean.getCurrentUser());
 
         FacesContext.getCurrentInstance().addMessage(null,
                 new FacesMessage(FacesMessage.SEVERITY_INFO, "לוח נוצר", "הלוח '" + newBoardName + "' נוצר בהצלחה"));

@@ -1,0 +1,94 @@
+<?xml version="1.0" encoding="UTF-8"?>
+<!DOCTYPE html
+    PUBLIC "-//W3C//DTD XHTML 1.0 Transitional//EN" "http://www.w3.org/TR/xhtml1/DTD/xhtml1-transitional.dtd">
+<html xmlns="http://www.w3.org/1999/xhtml" xmlns:h="http://xmlns.jcp.org/jsf/html"
+    xmlns:f="http://xmlns.jcp.org/jsf/core" xmlns:p="http://primefaces.org/ui"
+    xmlns:ui="http://xmlns.jcp.org/jsf/facelets">
+
+<f:metadata>
+    <f:viewParam name="projectId" value="#{activityBean.projectId}" />
+    <f:viewParam name="boardId" value="#{activityBean.boardId}" />
+</f:metadata>
+
+<h:head>
+    <title>#{activityBean.currentBoard != null ? activityBean.currentBoard.name : (activityBean.currentProject != null ? activityBean.currentProject.name : 'Project')} - Activity Log</title>
+    <style type="text/css">
+        body { margin: 0; padding: 0; font-family: 'Segoe UI', Tahoma, Geneva, Verdana, sans-serif; background-color: #f4f5f7; }
+        .activity-container { padding: 30px; max-width: 900px; margin: 0 auto; min-height: 100vh; }
+        .activity-header { background: white; padding: 25px 30px; border-radius: 12px; box-shadow: 0 2px 10px rgba(0, 0, 0, 0.08); margin-bottom: 30px; display: flex; justify-content: space-between; align-items: center; }
+        .timeline { position: relative; margin-top: 20px; }
+        .timeline::before { content: ''; position: absolute; left: 24px; top: 0; bottom: 0; width: 2px; background: #dfe1e6; }
+        .timeline-item { position: relative; padding-left: 60px; margin-bottom: 25px; }
+        .timeline-icon { position: absolute; left: 8px; top: 0; width: 34px; height: 34px; border-radius: 50%; display: flex; justify-content: center; align-items: center; color: white; background-color: #0052cc; box-shadow: 0 0 0 4px #f4f5f7; }
+        .timeline-content { background: white; padding: 15px 20px; border-radius: 8px; box-shadow: 0 1px 3px rgba(0,0,0,0.1); display: inline-block; width: 100%; box-sizing: border-box; }
+        .timeline-meta { font-size: 0.85em; color: #7a869a; margin-bottom: 5px; }
+        .timeline-text { color: #172b4d; margin: 0; line-height: 1.4; }
+        .empty-state { text-align: center; padding: 50px; color: #7a869a; }
+    </style>
+</h:head>
+
+<h:body>
+    <div class="activity-container">
+        <h:form id="activityForm">
+            <!-- Poller to auto-refresh every 10 seconds -->
+            <p:poll interval="10" listener="#{activityBean.refreshLogs}" update="timelinePanel" />
+
+            <!-- Header -->
+            <div class="activity-header">
+                <div>
+                    <h1 style="margin: 0; color: #172b4d;">
+                        <i class="pi pi-history" style="margin-right: 12px; color: #ff991f;"></i>
+                        Activity Log
+                    </h1>
+                    <p style="margin: 8px 0 0 0; color: #5e6c84; font-size: 1.05em;">
+                        #{activityBean.currentBoard != null ? ('Board: ' += activityBean.currentBoard.name) : (activityBean.currentProject != null ? ('Project: ' += activityBean.currentProject.name) : 'Loading...')}
+                    </p>
+                </div>
+
+                <div style="display: flex; gap: 12px;">
+                    <p:commandButton value="Back" icon="pi pi-arrow-left" styleClass="ui-button-secondary"
+                        action="#{activityBean.goBack}" />
+                </div>
+            </div>
+
+            <!-- Timeline -->
+            <h:panelGroup id="timelinePanel" layout="block">
+                <ui:fragment rendered="#{not empty activityBean.activityLogs}">
+                    <div class="timeline">
+                        <ui:repeat value="#{activityBean.activityLogs}" var="log">
+                            <div class="timeline-item">
+                                <!-- Determine icon based on action type -->
+                                <div class="timeline-icon" style="background-color: #{log.actionType == 'TASK_CREATED' ? '#36b37e' : (log.actionType == 'COMMENT_ADDED' ? '#ffab00' : '#0052cc')}">
+                                    <i class="pi #{log.actionType == 'TASK_CREATED' ? 'pi-check-square' : (log.actionType == 'COMMENT_ADDED' ? 'pi-comments' : 'pi-bolt')}"></i>
+                                </div>
+                                <div class="timeline-content">
+                                    <div class="timeline-meta">
+                                        <strong>#{log.user.username}</strong> • 
+                                        <h:outputText value="#{log.createdAt}">
+                                            <f:convertDateTime type="localDateTime" pattern="dd/MM/yyyy HH:mm:ss" />
+                                        </h:outputText>
+                                    </div>
+                                    <div style="font-size: 0.8em; color: #0052cc; margin-bottom: 4px;">
+                                        <i class="pi pi-folder" style="margin-right: 4px;"></i>#{log.project.name}#{log.board != null ? ' / ' += log.board.name : ''}
+                                    </div>
+                                    <p class="timeline-text">
+                                        #{log.details}
+                                    </p>
+                                </div>
+                            </div>
+                        </ui:repeat>
+                    </div>
+                </ui:fragment>
+
+                <ui:fragment rendered="#{empty activityBean.activityLogs}">
+                    <div class="empty-state">
+                        <i class="pi pi-clock" style="font-size: 3em; color: #dfe1e6; margin-bottom: 15px;"></i>
+                        <h3>No Activity Yet</h3>
+                        <p>Actions taken in this project will appear here automatically.</p>
+                    </div>
+                </ui:fragment>
+            </h:panelGroup>
+        </h:form>
+    </div>
+</h:body>
+</html>

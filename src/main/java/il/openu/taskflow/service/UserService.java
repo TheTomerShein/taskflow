@@ -7,6 +7,7 @@ import jakarta.ejb.Stateless;
 import jakarta.inject.Inject;
 
 import java.io.Serializable;
+import java.util.Optional;
 
 /**
  * Business logic for users (login, register, etc.)
@@ -51,7 +52,7 @@ public class UserService implements Serializable {
     /**
      * Find user by ID.
      */
-    public User findById(Long id) {
+    public Optional<User> findById(Long id) {
         return userRepository.findById(id);
     }
 }
