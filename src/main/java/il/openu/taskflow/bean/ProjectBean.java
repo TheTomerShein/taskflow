@@ -93,4 +93,12 @@ public class ProjectBean implements Serializable {
 
     public String getNewBoardDescription() { return newBoardDescription; }
     public void setNewBoardDescription(String newBoardDescription) { this.newBoardDescription = newBoardDescription; }
+
+    /**
+     * Returns true if the current logged-in user is the owner of this project.
+     */
+    public boolean isOwner() {
+        if (currentProject == null || authBean.getCurrentUser() == null) return false;
+        return currentProject.getOwner().getId().equals(authBean.getCurrentUser().getId());
+    }
 }

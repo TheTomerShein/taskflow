@@ -3,7 +3,7 @@
     PUBLIC "-//W3C//DTD XHTML 1.0 Transitional//EN" "http://www.w3.org/TR/xhtml1/DTD/xhtml1-transitional.dtd">
 <html xmlns="http://www.w3.org/1999/xhtml" xmlns:h="http://xmlns.jcp.org/jsf/html"
     xmlns:f="http://xmlns.jcp.org/jsf/core" xmlns:p="http://primefaces.org/ui"
-    xmlns:ui="http://xmlns.jcp.org/jsf/facelets">
+    xmlns:ui="http://xmlns.jcp.org/jsf/facelets" dir="rtl">
 
 <f:metadata>
     <f:viewParam name="projectId" value="#{activityBean.projectId}" />
@@ -12,43 +12,193 @@
 
 <h:head>
     <title>#{activityBean.currentBoard != null ? activityBean.currentBoard.name : (activityBean.currentProject != null ? activityBean.currentProject.name : 'Project')} - Activity Log</title>
+    <link href="https://fonts.googleapis.com/css2?family=Inter:wght@400;600;700;800&amp;display=swap" rel="stylesheet" />
     <style type="text/css">
-        body { margin: 0; padding: 0; font-family: 'Segoe UI', Tahoma, Geneva, Verdana, sans-serif; background-color: #f4f5f7; }
-        .activity-container { padding: 30px; max-width: 900px; margin: 0 auto; min-height: 100vh; }
-        .activity-header { background: white; padding: 25px 30px; border-radius: 12px; box-shadow: 0 2px 10px rgba(0, 0, 0, 0.08); margin-bottom: 30px; display: flex; justify-content: space-between; align-items: center; }
-        .timeline { position: relative; margin-top: 20px; }
-        .timeline::before { content: ''; position: absolute; left: 24px; top: 0; bottom: 0; width: 2px; background: #dfe1e6; }
-        .timeline-item { position: relative; padding-left: 60px; margin-bottom: 25px; }
-        .timeline-icon { position: absolute; left: 8px; top: 0; width: 34px; height: 34px; border-radius: 50%; display: flex; justify-content: center; align-items: center; color: white; background-color: #0052cc; box-shadow: 0 0 0 4px #f4f5f7; }
-        .timeline-content { background: white; padding: 15px 20px; border-radius: 8px; box-shadow: 0 1px 3px rgba(0,0,0,0.1); display: inline-block; width: 100%; box-sizing: border-box; }
-        .timeline-meta { font-size: 0.85em; color: #7a869a; margin-bottom: 5px; }
-        .timeline-text { color: #172b4d; margin: 0; line-height: 1.4; }
-        .empty-state { text-align: center; padding: 50px; color: #7a869a; }
+        * { margin: 0; padding: 0; box-sizing: border-box; }
+
+        body {
+            font-family: 'Inter', sans-serif;
+            background: #f5f5f7;
+            min-height: 100vh;
+            direction: rtl;
+        }
+
+        .activity-container {
+            max-width: 780px;
+            margin: 0 auto;
+            padding: 40px 24px;
+        }
+
+        /* ===== Header ===== */
+        .activity-header {
+            background: #ffffff;
+            border-radius: 24px;
+            box-shadow: 0 4px 24px rgba(0, 0, 0, 0.06);
+            padding: 28px 36px;
+            margin-bottom: 28px;
+            display: flex;
+            justify-content: space-between;
+            align-items: center;
+            animation: fadeIn 0.4s ease-out;
+        }
+
+        @keyframes fadeIn {
+            from { opacity: 0; transform: translateY(12px); }
+            to { opacity: 1; transform: translateY(0); }
+        }
+
+        .activity-header h1 {
+            font-size: 1.5em;
+            font-weight: 800;
+            color: #1a1a2e;
+        }
+
+        .activity-header h1 i {
+            color: #9b59b6;
+            margin-left: 10px;
+        }
+
+        .activity-header p {
+            color: #999;
+            font-size: 0.92em;
+            margin-top: 4px;
+        }
+
+        .btn-pill {
+            padding: 10px 20px !important;
+            border: none !important;
+            border-radius: 50px !important;
+            font-weight: 600 !important;
+            font-family: 'Inter', sans-serif !important;
+            font-size: 0.88em !important;
+            cursor: pointer !important;
+            transition: all 0.2s ease !important;
+            background: #f5f5f7 !important;
+            color: #555 !important;
+        }
+
+        .btn-pill:hover {
+            background: #ececee !important;
+        }
+
+        /* ===== Timeline ===== */
+        .timeline {
+            position: relative;
+            margin-top: 8px;
+        }
+
+        .timeline::before {
+            content: '';
+            position: absolute;
+            right: 18px;
+            top: 0;
+            bottom: 0;
+            width: 2px;
+            background: #e8d5f5;
+        }
+
+        .timeline-item {
+            position: relative;
+            padding-right: 52px;
+            margin-bottom: 16px;
+            animation: fadeIn 0.3s ease-out;
+        }
+
+        .timeline-dot {
+            position: absolute;
+            right: 10px;
+            top: 18px;
+            width: 18px;
+            height: 18px;
+            border-radius: 50%;
+            background: linear-gradient(135deg, #9b59b6 0%, #8e44ad 100%);
+            box-shadow: 0 0 0 4px #f5f5f7;
+        }
+
+        .timeline-dot.green {
+            background: linear-gradient(135deg, #27ae60 0%, #2ecc71 100%);
+        }
+
+        .timeline-dot.orange {
+            background: linear-gradient(135deg, #f39c12 0%, #e67e22 100%);
+        }
+
+        .timeline-dot.blue {
+            background: linear-gradient(135deg, #3498db 0%, #2980b9 100%);
+        }
+
+        .timeline-card {
+            background: #ffffff;
+            padding: 16px 20px;
+            border-radius: 16px;
+            box-shadow: 0 2px 10px rgba(0, 0, 0, 0.04);
+            border: 1px solid #f0f0f2;
+        }
+
+        .timeline-meta {
+            font-size: 0.82em;
+            color: #999;
+            margin-bottom: 6px;
+            display: flex;
+            align-items: center;
+            gap: 6px;
+        }
+
+        .timeline-meta strong {
+            color: #1a1a2e;
+        }
+
+        .timeline-context {
+            font-size: 0.78em;
+            color: #9b59b6;
+            margin-bottom: 4px;
+        }
+
+        .timeline-text {
+            color: #333;
+            font-size: 0.92em;
+            line-height: 1.5;
+        }
+
+        /* ===== Empty State ===== */
+        .empty-state {
+            text-align: center;
+            padding: 60px 20px;
+            color: #bbb;
+        }
+
+        .empty-state i {
+            font-size: 3em;
+            color: #e0d5f0;
+            margin-bottom: 12px;
+        }
+
+        .empty-state h3 {
+            color: #999;
+            font-weight: 600;
+        }
     </style>
 </h:head>
 
 <h:body>
     <div class="activity-container">
         <h:form id="activityForm">
-            <!-- Poller to auto-refresh every 10 seconds -->
             <p:poll interval="10" listener="#{activityBean.refreshLogs}" update="timelinePanel" />
 
             <!-- Header -->
             <div class="activity-header">
                 <div>
-                    <h1 style="margin: 0; color: #172b4d;">
-                        <i class="pi pi-history" style="margin-right: 12px; color: #ff991f;"></i>
+                    <h1>
+                        <i class="pi pi-history"></i>
                         Activity Log
                     </h1>
-                    <p style="margin: 8px 0 0 0; color: #5e6c84; font-size: 1.05em;">
+                    <p>
                         #{activityBean.currentBoard != null ? ('Board: ' += activityBean.currentBoard.name) : (activityBean.currentProject != null ? ('Project: ' += activityBean.currentProject.name) : 'Loading...')}
                     </p>
                 </div>
 
-                <div style="display: flex; gap: 12px;">
-                    <p:commandButton value="Back" icon="pi pi-arrow-left" styleClass="ui-button-secondary"
-                        action="#{activityBean.goBack}" />
-                </div>
+                <p:commandButton value="חזור" icon="pi pi-arrow-right" styleClass="btn-pill"
+                    action="#{activityBean.goBack}" />
             </div>
 
             <!-- Timeline -->
@@ -57,23 +207,20 @@
                     <div class="timeline">
                         <ui:repeat value="#{activityBean.activityLogs}" var="log">
                             <div class="timeline-item">
-                                <!-- Determine icon based on action type -->
-                                <div class="timeline-icon" style="background-color: #{log.actionType == 'TASK_CREATED' ? '#36b37e' : (log.actionType == 'COMMENT_ADDED' ? '#ffab00' : '#0052cc')}">
-                                    <i class="pi #{log.actionType == 'TASK_CREATED' ? 'pi-check-square' : (log.actionType == 'COMMENT_ADDED' ? 'pi-comments' : 'pi-bolt')}"></i>
-                                </div>
-                                <div class="timeline-content">
+                                <div class="timeline-dot #{log.actionType == 'TASK_CREATED' ? 'green' : (log.actionType == 'COMMENT_ADDED' ? 'orange' : (log.actionType == 'MEMBER_ADDED' or log.actionType == 'MEMBER_REMOVED' ? 'blue' : ''))}"></div>
+                                <div class="timeline-card">
                                     <div class="timeline-meta">
-                                        <strong>#{log.user.username}</strong> • 
+                                        <strong>#{log.user.username}</strong> •
                                         <h:outputText value="#{log.createdAt}">
                                             <f:convertDateTime type="localDateTime" pattern="dd/MM/yyyy HH:mm:ss" />
                                         </h:outputText>
                                     </div>
-                                    <div style="font-size: 0.8em; color: #0052cc; margin-bottom: 4px;">
-                                        <i class="pi pi-folder" style="margin-right: 4px;"></i>#{log.project.name}#{log.board != null ? ' / ' += log.board.name : ''}
+                                    <div class="timeline-context">
+                                        <i class="pi pi-folder" style="margin-left: 4px;"></i>#{log.project.name}#{log.board != null ? ' / ' += log.board.name : ''}
                                     </div>
-                                    <p class="timeline-text">
+                                    <div class="timeline-text">
                                         #{log.details}
-                                    </p>
+                                    </div>
                                 </div>
                             </div>
                         </ui:repeat>
@@ -82,9 +229,9 @@
 
                 <ui:fragment rendered="#{empty activityBean.activityLogs}">
                     <div class="empty-state">
-                        <i class="pi pi-clock" style="font-size: 3em; color: #dfe1e6; margin-bottom: 15px;"></i>
-                        <h3>No Activity Yet</h3>
-                        <p>Actions taken in this project will appear here automatically.</p>
+                        <i class="pi pi-clock"></i>
+                        <h3>אין פעילות עדיין</h3>
+                        <p>פעולות שיבוצעו בפרויקט יופיעו כאן אוטומטית</p>
                     </div>
                 </ui:fragment>
             </h:panelGroup>

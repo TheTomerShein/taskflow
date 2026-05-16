@@ -1,0 +1,418 @@
+<?xml version="1.0" encoding="UTF-8"?>
+<!DOCTYPE html
+    PUBLIC "-//W3C//DTD XHTML 1.0 Transitional//EN" "http://www.w3.org/TR/xhtml1/DTD/xhtml1-transitional.dtd">
+<html xmlns="http://www.w3.org/1999/xhtml" xmlns:h="http://xmlns.jcp.org/jsf/html"
+    xmlns:f="http://xmlns.jcp.org/jsf/core" xmlns:p="http://primefaces.org/ui"
+    xmlns:ui="http://xmlns.jcp.org/jsf/facelets" dir="rtl">
+
+<f:metadata>
+    <f:viewParam name="projectId" value="#{settingsBean.projectId}" />
+</f:metadata>
+
+<h:head>
+    <title>הגדרות - #{settingsBean.currentProject != null ? settingsBean.currentProject.name : 'Project'}</title>
+    <link href="https://fonts.googleapis.com/css2?family=Inter:wght@400;600;700;800&amp;display=swap" rel="stylesheet" />
+    <style type="text/css">
+        * { margin: 0; padding: 0; box-sizing: border-box; }
+
+        body {
+            font-family: 'Inter', sans-serif;
+            background: #f5f5f7;
+            min-height: 100vh;
+            direction: rtl;
+        }
+
+        .settings-container {
+            max-width: 780px;
+            margin: 0 auto;
+            padding: 40px 24px;
+        }
+
+        /* ===== Header ===== */
+        .settings-header {
+            background: #ffffff;
+            border-radius: 24px;
+            box-shadow: 0 4px 24px rgba(0, 0, 0, 0.06);
+            padding: 28px 36px;
+            margin-bottom: 28px;
+            display: flex;
+            justify-content: space-between;
+            align-items: center;
+            animation: fadeIn 0.4s ease-out;
+        }
+
+        @keyframes fadeIn {
+            from { opacity: 0; transform: translateY(12px); }
+            to { opacity: 1; transform: translateY(0); }
+        }
+
+        .settings-header h1 {
+            font-size: 1.5em;
+            font-weight: 800;
+            color: #1a1a2e;
+        }
+
+        .settings-header h1 i {
+            color: #9b59b6;
+            margin-left: 10px;
+        }
+
+        .settings-header p {
+            color: #999;
+            font-size: 0.92em;
+            margin-top: 4px;
+        }
+
+        /* ===== Sections ===== */
+        .settings-section {
+            background: #ffffff;
+            border-radius: 24px;
+            padding: 28px 36px;
+            box-shadow: 0 4px 24px rgba(0, 0, 0, 0.06);
+            margin-bottom: 20px;
+            animation: fadeIn 0.4s ease-out 0.1s both;
+        }
+
+        .section-title {
+            font-size: 1.1em;
+            font-weight: 700;
+            color: #1a1a2e;
+            margin-bottom: 20px;
+            padding-bottom: 12px;
+            border-bottom: 2px solid #f5f5f7;
+        }
+
+        .section-title i {
+            margin-left: 8px;
+            color: #9b59b6;
+        }
+
+        /* ===== Form ===== */
+        .form-group {
+            margin-bottom: 16px;
+        }
+
+        .form-group label {
+            display: block;
+            font-size: 0.88em;
+            font-weight: 600;
+            color: #555;
+            margin-bottom: 6px;
+        }
+
+        .form-group .ui-inputfield,
+        .form-group input[type="text"],
+        .form-group textarea {
+            width: 100% !important;
+            padding: 14px 18px !important;
+            border: 1.5px solid #e8e8ec !important;
+            border-radius: 50px !important;
+            background: #fafafc !important;
+            font-size: 0.95em !important;
+            font-family: 'Inter', sans-serif !important;
+            color: #333 !important;
+            outline: none !important;
+            transition: border-color 0.2s ease, box-shadow 0.2s ease !important;
+        }
+
+        .form-group textarea,
+        .form-group .ui-inputtextarea {
+            border-radius: 16px !important;
+        }
+
+        .form-group .ui-inputfield:focus {
+            border-color: #9b59b6 !important;
+            box-shadow: 0 0 0 3px rgba(155, 89, 182, 0.12) !important;
+            background: #fff !important;
+        }
+
+        /* ===== Buttons ===== */
+        .btn-pill {
+            padding: 10px 24px !important;
+            border: none !important;
+            border-radius: 50px !important;
+            font-weight: 600 !important;
+            font-family: 'Inter', sans-serif !important;
+            font-size: 0.88em !important;
+            cursor: pointer !important;
+            transition: all 0.2s ease !important;
+        }
+
+        .btn-purple {
+            background: linear-gradient(135deg, #9b59b6 0%, #8e44ad 100%) !important;
+            color: #fff !important;
+        }
+
+        .btn-purple:hover {
+            transform: translateY(-1px) !important;
+            box-shadow: 0 4px 16px rgba(155, 89, 182, 0.3) !important;
+        }
+
+        .btn-ghost {
+            background: #f5f5f7 !important;
+            color: #555 !important;
+        }
+
+        .btn-ghost:hover {
+            background: #ececee !important;
+        }
+
+        .btn-danger-sm {
+            padding: 6px 14px !important;
+            border: none !important;
+            border-radius: 50px !important;
+            background: #fdecea !important;
+            color: #c0392b !important;
+            font-weight: 600 !important;
+            font-size: 0.82em !important;
+            cursor: pointer !important;
+            transition: all 0.2s ease !important;
+        }
+
+        .btn-danger-sm:hover {
+            background: #f8d7da !important;
+        }
+
+        .btn-success-sm {
+            padding: 10px 20px !important;
+            border: none !important;
+            border-radius: 50px !important;
+            background: linear-gradient(135deg, #27ae60 0%, #2ecc71 100%) !important;
+            color: #fff !important;
+            font-weight: 600 !important;
+            font-size: 0.88em !important;
+            cursor: pointer !important;
+            transition: all 0.2s ease !important;
+        }
+
+        .btn-success-sm:hover {
+            transform: translateY(-1px) !important;
+            box-shadow: 0 4px 16px rgba(39, 174, 96, 0.3) !important;
+        }
+
+        /* ===== Members ===== */
+        .member-row {
+            display: flex;
+            justify-content: space-between;
+            align-items: center;
+            padding: 12px 16px;
+            border-radius: 16px;
+            margin-bottom: 8px;
+            background: #fafafc;
+            transition: background 0.2s;
+        }
+
+        .member-row:hover {
+            background: #f0f0f2;
+        }
+
+        .member-info {
+            display: flex;
+            align-items: center;
+            gap: 12px;
+        }
+
+        .member-avatar {
+            width: 40px;
+            height: 40px;
+            border-radius: 50%;
+            background: linear-gradient(135deg, #9b59b6 0%, #8e44ad 100%);
+            color: white;
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            font-weight: 700;
+            font-size: 1.1em;
+        }
+
+        .member-name {
+            font-weight: 600;
+            color: #1a1a2e;
+        }
+
+        .member-email {
+            font-size: 0.82em;
+            color: #999;
+        }
+
+        .owner-badge {
+            background: linear-gradient(135deg, #9b59b6 0%, #8e44ad 100%);
+            color: white;
+            padding: 4px 12px;
+            border-radius: 50px;
+            font-size: 0.75em;
+            font-weight: 600;
+        }
+
+        .add-member-row {
+            display: flex;
+            gap: 12px;
+            align-items: flex-end;
+            margin-bottom: 20px;
+        }
+
+        .add-member-row .ui-autocomplete {
+            width: 100% !important;
+        }
+
+        .add-member-row .ui-autocomplete-input {
+            width: 100% !important;
+            padding: 12px 18px !important;
+            border: 1.5px solid #e8e8ec !important;
+            border-radius: 50px !important;
+            background: #fafafc !important;
+            font-family: 'Inter', sans-serif !important;
+        }
+
+        .add-member-row .ui-autocomplete-input:focus {
+            border-color: #9b59b6 !important;
+            box-shadow: 0 0 0 3px rgba(155, 89, 182, 0.12) !important;
+        }
+
+        /* ===== Access Denied ===== */
+        .access-denied {
+            text-align: center;
+            padding: 60px 20px;
+            color: #bbb;
+        }
+
+        .access-denied i {
+            font-size: 3em;
+            color: #e0d5f0;
+            margin-bottom: 12px;
+        }
+
+        .access-denied h3 {
+            color: #999;
+            font-weight: 600;
+        }
+    </style>
+</h:head>
+
+<h:body>
+    <div class="settings-container">
+        <h:form id="settingsForm">
+
+            <!-- Header -->
+            <div class="settings-header">
+                <div>
+                    <h1>
+                        <i class="pi pi-cog"></i>
+                        הגדרות פרויקט
+                    </h1>
+                    <p>#{settingsBean.currentProject != null ? settingsBean.currentProject.name : ''}</p>
+                </div>
+                <p:button value="חזור לפרויקט" icon="pi pi-arrow-right" styleClass="btn-pill btn-ghost"
+                    outcome="project">
+                    <f:param name="projectId" value="#{settingsBean.projectId}" />
+                </p:button>
+            </div>
+
+            <p:growl id="messages" showDetail="true" life="3000" />
+
+            <h:panelGroup rendered="#{settingsBean.currentProject != null}" layout="block">
+
+                <!-- Section 1: Project Details -->
+                <div class="settings-section">
+                    <h3 class="section-title">
+                        <i class="pi pi-pencil"></i>
+                        פרטי פרויקט
+                    </h3>
+
+                    <div class="form-group">
+                        <label>שם הפרויקט</label>
+                        <p:inputText value="#{settingsBean.currentProject.name}"
+                            required="true" requiredMessage="שם הפרויקט הוא שדה חובה" />
+                    </div>
+
+                    <div class="form-group">
+                        <label>תיאור</label>
+                        <p:inputTextarea value="#{settingsBean.currentProject.description}" rows="3" />
+                    </div>
+
+                    <p:commandButton value="שמור שינויים" icon="pi pi-save" styleClass="btn-pill btn-purple"
+                        action="#{settingsBean.saveProject}" update="messages" />
+                </div>
+
+                <!-- Section 2: Members -->
+                <div class="settings-section">
+                    <h3 class="section-title">
+                        <i class="pi pi-users"></i>
+                        חברי צוות (#{settingsBean.members != null ? settingsBean.members.size() : 0})
+                    </h3>
+
+                    <!-- Add Member -->
+                    <div class="add-member-row">
+                        <div style="flex: 1;">
+                            <p:autoComplete id="userSearch" value="#{settingsBean.selectedUser}"
+                                completeMethod="#{settingsBean.searchUsers}"
+                                var="u" itemLabel="#{u.username} (#{u.email})" itemValue="#{u}"
+                                converter="#{userConverter}"
+                                placeholder="חפש לפי שם משתמש או אימייל..."
+                                minQueryLength="1" />
+                        </div>
+                        <p:commandButton value="הוסף" icon="pi pi-user-plus" styleClass="btn-success-sm"
+                            action="#{settingsBean.addMember}" update="settingsForm" />
+                    </div>
+
+                    <!-- Members List -->
+                    <h:panelGroup id="membersList" layout="block">
+                        <ui:repeat value="#{settingsBean.members}" var="member">
+                            <div class="member-row">
+                                <div class="member-info">
+                                    <div class="member-avatar">
+                                        #{member.username.substring(0, 1).toUpperCase()}
+                                    </div>
+                                    <div>
+                                        <div class="member-name">#{member.username}</div>
+                                        <div class="member-email">#{member.email}</div>
+                                    </div>
+                                </div>
+
+                                <div style="display: flex; align-items: center; gap: 10px;">
+                                    <h:panelGroup rendered="#{settingsBean.currentProject.owner.id == member.id}">
+                                        <span class="owner-badge">בעלים</span>
+                                    </h:panelGroup>
+
+                                    <h:panelGroup rendered="#{settingsBean.currentProject.owner.id != member.id}">
+                                        <p:commandButton icon="pi pi-trash" styleClass="btn-danger-sm"
+                                            action="#{settingsBean.removeMember(member.id)}"
+                                            update="settingsForm">
+                                            <p:confirm header="הסר חבר"
+                                                message="האם אתה בטוח שברצונך להסיר את '#{member.username}' מהפרויקט?"
+                                                icon="pi pi-exclamation-triangle" />
+                                        </p:commandButton>
+                                    </h:panelGroup>
+                                </div>
+                            </div>
+                        </ui:repeat>
+                    </h:panelGroup>
+                </div>
+
+            </h:panelGroup>
+
+            <!-- Access Denied -->
+            <h:panelGroup rendered="#{settingsBean.currentProject == null}" layout="block">
+                <div class="settings-section">
+                    <div class="access-denied">
+                        <i class="pi pi-lock"></i>
+                        <h3>גישה נדחתה</h3>
+                        <p>רק בעל הפרויקט יכול לגשת להגדרות</p>
+                        <p:button value="חזור ל-Dashboard" icon="pi pi-arrow-right"
+                            styleClass="btn-pill btn-ghost" outcome="dashboard" style="margin-top: 16px;" />
+                    </div>
+                </div>
+            </h:panelGroup>
+
+            <p:confirmDialog global="true" showEffect="fade" hideEffect="fade">
+                <p:commandButton value="כן" type="button" styleClass="ui-confirmdialog-yes btn-pill btn-danger-sm"
+                    icon="pi pi-check" />
+                <p:commandButton value="לא" type="button" styleClass="ui-confirmdialog-no btn-pill btn-ghost"
+                    icon="pi pi-times" />
+            </p:confirmDialog>
+
+        </h:form>
+    </div>
+</h:body>
+
+</html>

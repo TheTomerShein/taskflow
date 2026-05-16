@@ -3,7 +3,7 @@
     PUBLIC "-//W3C//DTD XHTML 1.0 Transitional//EN" "http://www.w3.org/TR/xhtml1/DTD/xhtml1-transitional.dtd">
 <html xmlns="http://www.w3.org/1999/xhtml" xmlns:h="http://xmlns.jcp.org/jsf/html"
     xmlns:f="http://xmlns.jcp.org/jsf/core" xmlns:p="http://primefaces.org/ui"
-    xmlns:ui="http://xmlns.jcp.org/jsf/facelets">
+    xmlns:ui="http://xmlns.jcp.org/jsf/facelets" dir="rtl">
 
 <f:metadata>
     <f:viewParam name="projectId" value="#{projectBean.projectId}" />
@@ -11,82 +11,290 @@
 
 <h:head>
     <title>#{projectBean.currentProject != null ? projectBean.currentProject.name : 'פרויקט'} - לוחות</title>
+    <link href="https://fonts.googleapis.com/css2?family=Inter:wght@400;600;700;800&amp;display=swap" rel="stylesheet" />
     <style type="text/css">
-        .project-container {
-            padding: 30px;
-            background: #f8f9fa;
+        * { margin: 0; padding: 0; box-sizing: border-box; }
+
+        body {
+            font-family: 'Inter', sans-serif;
+            background: #f5f5f7;
             min-height: 100vh;
+            direction: rtl;
         }
 
+        .project-container {
+            max-width: 960px;
+            margin: 0 auto;
+            padding: 40px 24px;
+        }
+
+        /* ===== Header Card ===== */
         .project-header {
-            background: white;
-            padding: 25px 30px;
-            border-radius: 12px;
-            box-shadow: 0 2px 10px rgba(0, 0, 0, 0.08);
-            margin-bottom: 30px;
+            background: #ffffff;
+            border-radius: 24px;
+            box-shadow: 0 4px 24px rgba(0, 0, 0, 0.06);
+            padding: 28px 36px;
+            margin-bottom: 28px;
+            animation: fadeIn 0.4s ease-out;
         }
 
+        @keyframes fadeIn {
+            from { opacity: 0; transform: translateY(12px); }
+            to { opacity: 1; transform: translateY(0); }
+        }
+
+        .header-top {
+            display: flex;
+            justify-content: space-between;
+            align-items: center;
+        }
+
+        .header-top h1 {
+            font-size: 1.5em;
+            font-weight: 800;
+            color: #1a1a2e;
+        }
+
+        .header-top h1 i {
+            color: #9b59b6;
+            margin-left: 10px;
+        }
+
+        .header-top p {
+            color: #999;
+            font-size: 0.92em;
+            margin-top: 4px;
+        }
+
+        /* ===== Buttons ===== */
+        .nav-buttons {
+            display: flex;
+            gap: 8px;
+            flex-wrap: wrap;
+        }
+
+        .btn-pill {
+            padding: 10px 20px !important;
+            border: none !important;
+            border-radius: 50px !important;
+            font-weight: 600 !important;
+            font-family: 'Inter', sans-serif !important;
+            font-size: 0.88em !important;
+            cursor: pointer !important;
+            transition: all 0.2s ease !important;
+            text-decoration: none !important;
+            display: inline-flex !important;
+            align-items: center !important;
+            gap: 6px !important;
+        }
+
+        .btn-purple {
+            background: linear-gradient(135deg, #9b59b6 0%, #8e44ad 100%) !important;
+            color: #fff !important;
+        }
+
+        .btn-purple:hover {
+            transform: translateY(-1px) !important;
+            box-shadow: 0 4px 16px rgba(155, 89, 182, 0.3) !important;
+        }
+
+        .btn-ghost {
+            background: #f5f5f7 !important;
+            color: #555 !important;
+        }
+
+        .btn-ghost:hover {
+            background: #ececee !important;
+        }
+
+        .btn-warn {
+            background: #fff8e1 !important;
+            color: #f59e0b !important;
+        }
+
+        .btn-warn:hover {
+            background: #fef3c7 !important;
+        }
+
+        .btn-danger {
+            background: #f5f5f7 !important;
+            color: #c0392b !important;
+        }
+
+        .btn-danger:hover {
+            background: #fdecea !important;
+        }
+
+        /* ===== Section Title ===== */
+        .section-row {
+            display: flex;
+            justify-content: space-between;
+            align-items: center;
+            margin-bottom: 16px;
+        }
+
+        .section-title {
+            font-size: 1.15em;
+            font-weight: 700;
+            color: #1a1a2e;
+        }
+
+        /* ===== Board Cards ===== */
         .board-card {
-            background: white;
-            border-radius: 10px;
-            padding: 20px;
-            box-shadow: 0 2px 8px rgba(0, 0, 0, 0.1);
-            margin-bottom: 20px;
-            transition: transform 0.2s, box-shadow 0.2s;
+            background: #ffffff;
+            border-radius: 20px;
+            padding: 22px 28px;
+            box-shadow: 0 2px 12px rgba(0, 0, 0, 0.05);
+            margin-bottom: 12px;
+            transition: transform 0.2s ease, box-shadow 0.2s ease;
+            display: flex;
+            justify-content: space-between;
+            align-items: center;
+            border: 1.5px solid transparent;
         }
 
         .board-card:hover {
-            transform: translateY(-4px);
-            box-shadow: 0 8px 20px rgba(0, 0, 0, 0.15);
+            transform: translateY(-2px);
+            box-shadow: 0 6px 24px rgba(155, 89, 182, 0.1);
+            border-color: #e8d5f5;
+        }
+
+        .board-icon {
+            width: 40px;
+            height: 40px;
+            border-radius: 12px;
+            background: linear-gradient(135deg, #e8d5f5 0%, #d4b8e8 100%);
+            color: #8e44ad;
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            font-size: 1em;
+            margin-left: 14px;
+            flex-shrink: 0;
+        }
+
+        .board-info {
+            display: flex;
+            align-items: center;
+            flex: 1;
         }
 
         .board-name {
-            font-size: 1.3em;
             font-weight: 700;
-            color: #172b4d;
-            margin-bottom: 8px;
+            font-size: 1.05em;
+            color: #1a1a2e;
         }
 
         .board-meta {
-            color: #5e6c84;
-            font-size: 0.9em;
+            font-size: 0.82em;
+            color: #999;
+            margin-top: 2px;
         }
 
+        .open-board-link {
+            padding: 8px 20px !important;
+            border-radius: 50px !important;
+            background: linear-gradient(135deg, #9b59b6 0%, #8e44ad 100%) !important;
+            color: #fff !important;
+            text-decoration: none !important;
+            font-weight: 600 !important;
+            font-size: 0.88em !important;
+            transition: all 0.2s ease !important;
+            display: inline-block !important;
+        }
+
+        .open-board-link:hover {
+            transform: translateY(-1px) !important;
+            box-shadow: 0 4px 16px rgba(155, 89, 182, 0.3) !important;
+        }
+
+        /* ===== Empty State ===== */
         .empty-boards {
             text-align: center;
-            padding: 60px 20px;
-            color: #7a869a;
+            padding: 50px 20px;
+            color: #bbb;
+        }
+
+        .empty-boards i {
+            font-size: 3em;
+            color: #e0d5f0;
+            margin-bottom: 12px;
+        }
+
+        .empty-boards h3 {
+            color: #999;
+            font-weight: 600;
+        }
+
+        /* ===== Dialog Overrides ===== */
+        .form-group {
+            margin-bottom: 16px;
+        }
+
+        .form-group label {
+            display: block;
+            font-size: 0.88em;
+            font-weight: 600;
+            color: #555;
+            margin-bottom: 6px;
+        }
+
+        .form-group .ui-inputfield,
+        .form-group input[type="text"],
+        .form-group textarea {
+            width: 100% !important;
+            padding: 12px 16px !important;
+            border: 1.5px solid #e8e8ec !important;
+            border-radius: 50px !important;
+            background: #fafafc !important;
+            font-size: 0.95em !important;
+            font-family: 'Inter', sans-serif !important;
+            color: #333 !important;
+            outline: none !important;
+            transition: border-color 0.2s ease !important;
+        }
+
+        .form-group textarea,
+        .form-group .ui-inputtextarea {
+            border-radius: 16px !important;
+        }
+
+        .form-group .ui-inputfield:focus {
+            border-color: #9b59b6 !important;
+            box-shadow: 0 0 0 3px rgba(155, 89, 182, 0.12) !important;
         }
     </style>
 </h:head>
 
 <h:body>
-
     <div class="project-container">
         <h:form id="projectForm">
             <!-- Header -->
             <div class="project-header">
-                <div style="display: flex; justify-content: space-between; align-items: center;">
+                <div class="header-top">
                     <div>
-                        <h1 style="margin: 0; color: #172b4d;">
-                            <i class="pi pi-folder" style="margin-right: 12px; color: #1976d2;"></i>
+                        <h1>
+                            <i class="pi pi-folder"></i>
                             #{projectBean.currentProject != null ? projectBean.currentProject.name : 'פרויקט לא נמצא'}
                         </h1>
-                        <p style="margin: 8px 0 0 0; color: #5e6c84; font-size: 1.05em;">
-                            #{projectBean.currentProject != null ? projectBean.currentProject.description : ''}
-                        </p>
+                        <p>#{projectBean.currentProject != null ? projectBean.currentProject.description : ''}</p>
                     </div>
 
-                    <div style="display: flex; gap: 12px;">
-                        <p:button value="Activity Log" icon="pi pi-history" styleClass="ui-button-warning"
-                            outcome="activity?faces-redirect=true">
+                    <div class="nav-buttons">
+                        <p:button value="Activity Log" icon="pi pi-history" styleClass="btn-pill btn-warn"
+                            outcome="activity">
                             <f:param name="projectId" value="#{projectBean.projectId}" />
                         </p:button>
 
-                        <p:commandButton value="Dashboard" icon="pi pi-arrow-left" styleClass="ui-button-secondary"
+                        <p:button value="הגדרות" icon="pi pi-cog" styleClass="btn-pill btn-purple"
+                            outcome="settings" rendered="#{projectBean.owner}">
+                            <f:param name="projectId" value="#{projectBean.projectId}" />
+                        </p:button>
+
+                        <p:commandButton value="Dashboard" icon="pi pi-arrow-right" styleClass="btn-pill btn-ghost"
                             action="dashboard?faces-redirect=true" />
 
-                        <p:commandButton value="התנתק" icon="pi pi-sign-out" styleClass="ui-button-danger"
+                        <p:commandButton value="התנתק" icon="pi pi-sign-out" styleClass="btn-pill btn-danger"
                             action="#{authBean.logout}" />
                     </div>
                 </div>
@@ -96,51 +304,47 @@
 
             <h:panelGroup id="boardsList" layout="block">
                 <!-- Boards Section -->
-                <div style="display: flex; justify-content: space-between; align-items: center; margin-bottom: 20px;">
-                    <h2 style="margin: 0; color: #172b4d;">לוחות Kanban</h2>
-
-                    <p:commandButton value="הוסף לוח חדש" icon="pi pi-plus" styleClass="ui-button-success"
+                <div class="section-row">
+                    <div class="section-title">
+                        <i class="pi pi-th-large" style="margin-left: 6px; color: #9b59b6;"></i>
+                        לוחות Kanban
+                    </div>
+                    <p:commandButton value="+ לוח חדש" styleClass="btn-pill btn-purple"
                         oncomplete="PF('newBoardDialog').show()" />
                 </div>
 
                 <!-- Boards List -->
-                <h:panelGroup rendered="#{not empty projectBean.boards}">
-                    <p:panelGrid columns="1" style="width: 100%; border: none;" columnClasses="board-col">
-                        <ui:repeat value="#{projectBean.boards}" var="board">
-                            <div class="board-card">
-                                <div style="display: flex; justify-content: space-between; align-items: flex-start;">
-                                    <div>
-                                        <div class="board-name">#{board.name}</div>
-                                        <div class="board-meta">
-                                            נוצר: #{board.createdAt != null ? board.createdAt.toLocalDate() : ''} •
-                                            #{board.tasks != null ? board.tasks.size() : 0} משימות
-                                        </div>
-                                    </div>
-
-                                    <div style="display: flex; gap: 8px;">
-
-
-                                        <h:link outcome="kanban" value="פתח Kanban"
-                                            styleClass="ui-button ui-widget ui-state-default ui-corner-all ui-button-primary"
-                                            style="padding: 8px 20px; text-decoration: none; display: inline-block;">
-                                            <f:param name="boardId" value="#{board.id}" />
-                                            <i class="pi pi-th-large" style="margin-right: 8px;"></i>
-                                        </h:link>
+                <h:panelGroup rendered="#{not empty projectBean.boards}" layout="block">
+                    <ui:repeat value="#{projectBean.boards}" var="board">
+                        <div class="board-card">
+                            <div class="board-info">
+                                <div class="board-icon">
+                                    <i class="pi pi-th-large"></i>
+                                </div>
+                                <div>
+                                    <div class="board-name">#{board.name}</div>
+                                    <div class="board-meta">
+                                        #{board.tasks != null ? board.tasks.size() : 0} משימות •
+                                        נוצר #{board.createdAt != null ? board.createdAt.toLocalDate() : ''}
                                     </div>
                                 </div>
                             </div>
-                        </ui:repeat>
-                    </p:panelGrid>
+
+                            <h:link outcome="kanban" styleClass="open-board-link">
+                                <f:param name="boardId" value="#{board.id}" />
+                                <i class="pi pi-arrow-left" style="margin-left: 6px;"></i>
+                                פתח Kanban
+                            </h:link>
+                        </div>
+                    </ui:repeat>
                 </h:panelGroup>
 
                 <!-- Empty State -->
-                <h:panelGroup rendered="#{empty projectBean.boards}">
+                <h:panelGroup rendered="#{empty projectBean.boards}" layout="block">
                     <div class="empty-boards">
-                        <i class="pi pi-th-large" style="font-size: 4em; color: #dfe1e6; margin-bottom: 20px;"></i>
+                        <i class="pi pi-inbox"></i>
                         <h3>אין לוחות עדיין</h3>
                         <p>הוסף לוח חדש כדי להתחיל לנהל משימות</p>
-                        <p:commandButton value="הוסף לוח ראשון" icon="pi pi-plus" styleClass="ui-button-success"
-                            oncomplete="PF('newBoardDialog').show()" />
                     </div>
                 </h:panelGroup>
             </h:panelGroup>
@@ -149,26 +353,27 @@
 
     <!-- New Board Dialog -->
     <p:dialog id="newBoardDialog" widgetVar="newBoardDialog" header="לוח חדש" modal="true" draggable="true" width="450"
-        style="border-radius: 12px;">
-
+        style="border-radius: 24px;">
         <h:form>
-            <div style="padding: 10px 5px;">
-                <p:outputLabel for="boardName" value="שם הלוח *" style="font-weight: 700;" />
-                <p:inputText id="boardName" value="#{projectBean.newBoardName}" required="true"
-                    style="width: 100%; margin-top: 6px;" placeholder="למשל: Frontend, Backend, Marketing" />
+            <div style="padding: 16px 8px;">
+                <div class="form-group">
+                    <label>שם הלוח *</label>
+                    <p:inputText value="#{projectBean.newBoardName}" required="true"
+                        placeholder="למשל: Frontend, Backend, Marketing" />
+                </div>
 
-                <p:outputLabel for="boardDesc" value="תיאור (אופציונלי)"
-                    style="font-weight: 700; margin-top: 18px; display: block;" />
-                <p:inputTextarea id="boardDesc" value="#{projectBean.newBoardDescription}" rows="3"
-                    style="width: 100%; margin-top: 6px;" />
+                <div class="form-group">
+                    <label>תיאור (אופציונלי)</label>
+                    <p:inputTextarea value="#{projectBean.newBoardDescription}" rows="3" />
+                </div>
             </div>
 
-            <div style="text-align: right; margin-top: 20px; padding-top: 15px; border-top: 1px solid #eee;">
-                <p:commandButton value="בטל" icon="pi pi-times" styleClass="ui-button-secondary"
-                    onclick="PF('newBoardDialog').hide()" type="button" />
-                <p:commandButton value="צור לוח" icon="pi pi-check" styleClass="ui-button-success"
+            <div style="display: flex; gap: 8px; justify-content: flex-start; padding-top: 15px; border-top: 1px solid #f0f0f2;">
+                <p:commandButton value="צור לוח" icon="pi pi-check" styleClass="btn-pill btn-purple"
                     action="#{projectBean.createBoard}" update="@form :projectForm:boardsList :projectForm:messages"
                     oncomplete="if (!args.validationFailed) PF('newBoardDialog').hide();" />
+                <p:commandButton value="בטל" icon="pi pi-times" styleClass="btn-pill btn-ghost"
+                    onclick="PF('newBoardDialog').hide()" type="button" />
             </div>
         </h:form>
     </p:dialog>

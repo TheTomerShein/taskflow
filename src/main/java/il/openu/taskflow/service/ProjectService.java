@@ -96,4 +96,67 @@ public class ProjectService {
     public Optional<Project> findById(Long id) {
         return projectRepository.findById(id);
     }
+
+    /**
+     * Removes a member from a project and logs the action.
+     * @param projectId project ID
+     * @param userId user ID to remove
+     * @param removedBy the user who performed the action
+     * @return true if removed successfully
+     */
+    public boolean removeMember(Long projectId, Long userId, User removedBy) {
+        Project project = projectRepository.findById(projectId).orElse(null);
+        User user = userRepository.findById(userId).orElse(null);
+
+        if (project == null || user == null) {
+            return false;
+        }
+
+        // Cannot remove the owner
+        if (project.getOwner().getId().equals(userId)) {
+            return false;
+        }
+
+        if (!project.getMembers().contains(user)) {
+            return false;
+        }
+
+        project.getMembers().remove(user);
+        projectRepository.update(project);
+
+        // Log member removal
+        ActivityLog log = new ActivityLog(project, removedBy, ActivityLog.ActionType.MEMBER_REMOVED,
+                "Member removed: " + user.getUsername());
+        activityLogRepository.save(log);
+
+        return true;
+    }
+
+    /**
+     * Updates the project name/description and logs the action.
+     * @param project the project to update
+     * @param user the user who performed the action
+     * @return the updated project
+     */
+    public Project updateProject(Project project, User user) {
+        Project updated = projectRepository.update(project);
+
+        ActivityLog log = new ActivityLog(updated, user, ActivityLog.ActionType.PROJECT_UPDATED,
+                "Project updated: " + project.getName());
+        activityLogRepository.save(log);
+
+        return updated;
+    }
+
+    /**
+     * Checks if a user is the owner of a project.
+     * @param projectId project ID
+     * @param userId user ID
+     * @return true if the user is the owner
+     */
+    public boolean isOwner(Long projectId, Long userId) {
+        return projectRepository.findById(projectId)
+                .map(project -> project.getOwner().getId().equals(userId))
+                .orElse(false);
+    }
 }

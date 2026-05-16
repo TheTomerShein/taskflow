@@ -7,7 +7,7 @@
       xmlns:p="http://primefaces.org/ui" dir="rtl">
 
 <h:head>
-    <title>TaskFlow - התחברות</title>
+    <title>TaskFlow - הרשמה</title>
     <link href="https://fonts.googleapis.com/css2?family=Inter:wght@400;600;700;800&amp;display=swap" rel="stylesheet" />
     <style type="text/css">
         * {
@@ -171,11 +171,6 @@
         }
 
         /* ===== Messages ===== */
-        .ui-messages,
-        .ui-growl {
-            direction: rtl;
-        }
-
         .auth-messages {
             margin-bottom: 16px;
         }
@@ -204,20 +199,20 @@
 
         <!-- Pill Toggle -->
         <div class="auth-toggle">
-            <a href="login.xhtml" class="active">
+            <a href="login.xhtml">
                 <i class="pi pi-sign-in"></i> התחברות
             </a>
-            <a href="register.xhtml">
+            <a href="register.xhtml" class="active">
                 <i class="pi pi-user-plus"></i> הרשמה
             </a>
         </div>
 
         <!-- Titles -->
-        <div class="auth-title">ברוך הבא שוב</div>
-        <div class="auth-subtitle">התחבר לחשבון שלך</div>
+        <div class="auth-title">צור חשבון חדש</div>
+        <div class="auth-subtitle">הירשם כדי להתחיל לנהל פרויקטים</div>
 
-        <!-- Login Form -->
-        <h:form id="loginForm">
+        <!-- Register Form -->
+        <h:form id="registerForm">
             <div class="auth-messages">
                 <p:messages id="messages" closable="true" />
             </div>
@@ -230,6 +225,13 @@
             </div>
 
             <div class="form-group">
+                <label for="email">אימייל</label>
+                <p:inputText id="email" value="#{authBean.email}" required="true"
+                    requiredMessage="אימייל הוא שדה חובה"
+                    placeholder="example@email.com" />
+            </div>
+
+            <div class="form-group">
                 <label for="password">סיסמה</label>
                 <p:password id="password" value="#{authBean.password}" required="true"
                     requiredMessage="סיסמה היא שדה חובה"
@@ -237,7 +239,7 @@
                     toggleMask="true" feedback="false" />
             </div>
 
-            <p:commandButton value="התחבר לחשבון" action="#{authBean.login}"
+            <p:commandButton value="צור חשבון" action="#{authBean.register}"
                 update="messages" styleClass="auth-submit" />
         </h:form>
 

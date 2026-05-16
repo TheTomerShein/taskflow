@@ -43,4 +43,18 @@ public class UserRepository extends AbstractRepository<User> {
             return null;
         }
     }
+
+    /**
+     * Searches users by username or email (case-insensitive, partial match).
+     * @param term the search term
+     * @return list of matching users
+     */
+    public List<User> searchByTerm(String term) {
+        String pattern = "%" + term.toLowerCase() + "%";
+        return em.createQuery(
+                        "SELECT u FROM User u WHERE LOWER(u.username) LIKE :pattern OR LOWER(u.email) LIKE :pattern",
+                        User.class)
+                .setParameter("pattern", pattern)
+                .getResultList();
+    }
 }
