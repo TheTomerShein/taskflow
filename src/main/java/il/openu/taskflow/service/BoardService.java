@@ -1,16 +1,15 @@
 package il.openu.taskflow.service;
 
-import il.openu.taskflow.entity.ActivityLog;
 import il.openu.taskflow.entity.Board;
 import il.openu.taskflow.entity.Project;
 import il.openu.taskflow.entity.User;
-import il.openu.taskflow.repository.ActivityLogRepository;
 import il.openu.taskflow.repository.BoardRepository;
 import jakarta.ejb.Stateless;
+import jakarta.enterprise.event.Event;
 import jakarta.inject.Inject;
 
 /**
- * Business logic for boards - create board with activity logging.
+ * Business logic for boards — create board with async activity logging via JTA-synchronized CDI events.
  */
 @Stateless
 public class BoardService {
@@ -19,10 +18,10 @@ public class BoardService {
     private BoardRepository boardRepository;
 
     @Inject
-    private ActivityLogRepository activityLogRepository;
+    private Event<ActivityEvent> eventPublisher;
 
     /**
-     * Creates a new board inside a project and logs the action.
+     * Creates a new board inside a project and logs the action asynchronously via JMS after transaction commit.
      *
      * @param name    the board name
      * @param project the parent project
@@ -36,10 +35,15 @@ public class BoardService {
 
         Board savedBoard = boardRepository.save(board);
 
-        // Log board creation
-        ActivityLog log = new ActivityLog(project, savedBoard, user,
-                ActivityLog.ActionType.BOARD_CREATED, "Board created: " + name);
-        activityLogRepository.save(log);
+        // Fire CDI event — will be processed after transaction commits successfully
+        eventPublisher.fire(new ActivityEvent(
+                "BOARD_CREATED",
+                project.getId(),
+                savedBoard.getId(),
+                null,
+                user.getId(),
+                "Board created: " + name
+        ));
 
         return savedBoard;
     }

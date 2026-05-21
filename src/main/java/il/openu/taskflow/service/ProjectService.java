@@ -1,19 +1,18 @@
 package il.openu.taskflow.service;
 
-import il.openu.taskflow.entity.ActivityLog;
 import il.openu.taskflow.entity.Project;
 import il.openu.taskflow.entity.User;
-import il.openu.taskflow.repository.ActivityLogRepository;
 import il.openu.taskflow.repository.ProjectRepository;
 import il.openu.taskflow.repository.UserRepository;
 import jakarta.ejb.Stateless;
+import jakarta.enterprise.event.Event;
 import jakarta.inject.Inject;
 
 import java.util.List;
 import java.util.Optional;
 
 /**
- * Business logic for projects (create, add member, etc.)
+ * Business logic for projects (create, add member, etc.) with async activity logging via JTA-synchronized CDI events.
  */
 @Stateless
 public class ProjectService {
@@ -25,7 +24,7 @@ public class ProjectService {
     private UserRepository userRepository;
 
     @Inject
-    private ActivityLogRepository activityLogRepository;
+    private Event<ActivityEvent> eventPublisher;
 
     /**
      * Creates a new project and sets the owner as the first member.
@@ -42,10 +41,15 @@ public class ProjectService {
         project.getMembers().add(owner);   // owner is also a member
         Project savedProject = projectRepository.save(project);
 
-        // Log project creation
-        ActivityLog log = new ActivityLog(savedProject, owner, ActivityLog.ActionType.PROJECT_CREATED,
-                "Project created: " + name);
-        activityLogRepository.save(log);
+        // Fire CDI event — will be processed after transaction commits successfully
+        eventPublisher.fire(new ActivityEvent(
+                "PROJECT_CREATED",
+                savedProject.getId(),
+                null,
+                null,
+                owner.getId(),
+                "Project created: " + name
+        ));
 
         return savedProject;
     }
@@ -73,10 +77,15 @@ public class ProjectService {
         project.getMembers().add(user);
         projectRepository.update(project);
 
-        // Log member addition
-        ActivityLog log = new ActivityLog(project, addedBy, ActivityLog.ActionType.MEMBER_ADDED,
-                "Member added: " + user.getUsername());
-        activityLogRepository.save(log);
+        // Fire CDI event — will be processed after transaction commits successfully
+        eventPublisher.fire(new ActivityEvent(
+                "MEMBER_ADDED",
+                project.getId(),
+                null,
+                null,
+                addedBy.getId(),
+                "Member added: " + user.getUsername()
+        ));
 
         return true;
     }
@@ -98,7 +107,7 @@ public class ProjectService {
     }
 
     /**
-     * Removes a member from a project and logs the action.
+     * Removes a member from a project and logs the action asynchronously.
      * @param projectId project ID
      * @param userId user ID to remove
      * @param removedBy the user who performed the action
@@ -124,16 +133,21 @@ public class ProjectService {
         project.getMembers().remove(user);
         projectRepository.update(project);
 
-        // Log member removal
-        ActivityLog log = new ActivityLog(project, removedBy, ActivityLog.ActionType.MEMBER_REMOVED,
-                "Member removed: " + user.getUsername());
-        activityLogRepository.save(log);
+        // Fire CDI event — will be processed after transaction commits successfully
+        eventPublisher.fire(new ActivityEvent(
+                "MEMBER_REMOVED",
+                project.getId(),
+                null,
+                null,
+                removedBy.getId(),
+                "Member removed: " + user.getUsername()
+        ));
 
         return true;
     }
 
     /**
-     * Updates the project name/description and logs the action.
+     * Updates the project name/description and logs the action asynchronously.
      * @param project the project to update
      * @param user the user who performed the action
      * @return the updated project
@@ -141,9 +155,15 @@ public class ProjectService {
     public Project updateProject(Project project, User user) {
         Project updated = projectRepository.update(project);
 
-        ActivityLog log = new ActivityLog(updated, user, ActivityLog.ActionType.PROJECT_UPDATED,
-                "Project updated: " + project.getName());
-        activityLogRepository.save(log);
+        // Fire CDI event — will be processed after transaction commits successfully
+        eventPublisher.fire(new ActivityEvent(
+                "PROJECT_UPDATED",
+                updated.getId(),
+                null,
+                null,
+                user.getId(),
+                "Project updated: " + project.getName()
+        ));
 
         return updated;
     }

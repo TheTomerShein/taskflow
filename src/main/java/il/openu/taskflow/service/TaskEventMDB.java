@@ -7,6 +7,7 @@ import il.openu.taskflow.entity.Task;
 import il.openu.taskflow.entity.User;
 import il.openu.taskflow.repository.ActivityLogRepository;
 import il.openu.taskflow.repository.BoardRepository;
+import il.openu.taskflow.repository.ProjectRepository;
 import il.openu.taskflow.repository.TaskRepository;
 import il.openu.taskflow.repository.UserRepository;
 import jakarta.ejb.ActivationConfigProperty;
@@ -22,8 +23,9 @@ import jakarta.json.JsonReader;
 import java.io.StringReader;
 
 /**
- * Message-Driven Bean that consumes task events from the JMS queue
+ * Message-Driven Bean that consumes activity events from the JMS queue
  * and persists them as ActivityLog entries asynchronously.
+ * Handles task, board, and project-level events.
  */
 @MessageDriven(activationConfig = {
     @ActivationConfigProperty(
@@ -47,6 +49,9 @@ public class TaskEventMDB implements MessageListener {
     @Inject
     private BoardRepository boardRepository;
 
+    @Inject
+    private ProjectRepository projectRepository;
+
     @Override
     public void onMessage(Message message) {
         try {
@@ -58,7 +63,7 @@ public class TaskEventMDB implements MessageListener {
             String jsonText = ((TextMessage) message).getText();
             System.out.println("[MDB] Received JSON Event: " + jsonText);
 
-            // Parse JSON with robust handling
+            // Parse JSON
             JsonObject json;
             try (JsonReader reader = Json.createReader(new StringReader(jsonText))) {
                 json = reader.readObject();
@@ -66,62 +71,80 @@ public class TaskEventMDB implements MessageListener {
 
             String eventType = json.getString("eventType", "UNKNOWN");
 
-            // Robust numeric extraction (prevents NPE / unnecessary redeliveries)
-            Long taskId = null;
-            if (json.containsKey("taskId") && !json.isNull("taskId")) {
-                taskId = json.getJsonNumber("taskId").longValue();
-            }
-
-            Long userId = null;
-            if (json.containsKey("userId") && !json.isNull("userId")) {
-                userId = json.getJsonNumber("userId").longValue();
+            // Robust numeric extraction — prevents NPE / unnecessary redeliveries
+            Long projectId = null;
+            if (json.containsKey("projectId") && !json.isNull("projectId")) {
+                long val = json.getJsonNumber("projectId").longValue();
+                if (val != 0) projectId = val;
             }
 
             Long boardId = null;
             if (json.containsKey("boardId") && !json.isNull("boardId")) {
-                boardId = json.getJsonNumber("boardId").longValue();
+                long val = json.getJsonNumber("boardId").longValue();
+                if (val != 0) boardId = val;
+            }
+
+            Long taskId = null;
+            if (json.containsKey("taskId") && !json.isNull("taskId")) {
+                long val = json.getJsonNumber("taskId").longValue();
+                if (val != 0) taskId = val;
+            }
+
+            Long userId = null;
+            if (json.containsKey("userId") && !json.isNull("userId")) {
+                long val = json.getJsonNumber("userId").longValue();
+                if (val != 0) userId = val;
             }
 
             String details = json.getString("details", "");
 
-            // Load entities (best-effort enrichment)
+            // Load entities — best-effort enrichment
             User user = (userId != null) ? userRepository.findById(userId).orElse(null) : null;
             Board board = (boardId != null) ? boardRepository.findById(boardId).orElse(null) : null;
             Task task = (taskId != null) ? taskRepository.findById(taskId).orElse(null) : null;
+            Project project = (projectId != null) ? projectRepository.findById(projectId).orElse(null) : null;
 
-            if (user == null || board == null) {
-                System.err.println("[MDB] User or Board not found. Event: " + jsonText);
-                return; // Do not throw here — bad data, avoid infinite redelivery loop
+            // Fallback: derive project from board if not explicitly passed
+            if (project == null && board != null) {
+                project = board.getProject();
             }
 
-            Project project = board.getProject();
+            // User and Project are mandatory for any ActivityLog entry
+            if (user == null || project == null) {
+                System.err.println("[MDB] User or Project not found. Dropping event: " + jsonText);
+                return; // do NOT throw here — avoids infinite redelivery on bad data
+            }
 
-            // Map to enum
             ActivityLog.ActionType actionType = mapToActionType(eventType);
 
-            // Create ActivityLog using existing constructor + lifecycle callbacks
-            // (no manual timestamp — entity uses createdAt via @PrePersist)
-            ActivityLog log = new ActivityLog(project, board, user, actionType, details);
+            // Choose the correct constructor based on whether a board is present
+            ActivityLog log;
+            if (board != null) {
+                log = new ActivityLog(project, board, user, actionType, details);
+            } else {
+                log = new ActivityLog(project, user, actionType, details);
+            }
+
             if (task != null) {
                 log.setTask(task);
             }
 
             activityLogRepository.save(log);
-
             System.out.println("[MDB] ActivityLog saved successfully: " + actionType);
 
         } catch (Exception e) {
             System.err.println("[MDB] ERROR processing message: " + e.getMessage());
             e.printStackTrace();
 
-            // Throw RuntimeException so the container redelivers the message
-            // (configure redelivery limits + DLQ in Payara for production safety)
-            throw new RuntimeException("Failed to process TaskEvent message", e);
+            // Throw RuntimeException so the container can redeliver the message.
+            // Configure redelivery limits + DLQ in Payara for production safety.
+            throw new RuntimeException("Failed to process event message", e);
         }
     }
 
     /**
      * Maps an event type string to the corresponding ActivityLog.ActionType enum value.
+     * Covers task, board, and project-level events.
      *
      * @param eventType the event type string from the JSON payload
      * @return the matching ActionType, defaults to TASK_UPDATED for unknown types
@@ -131,6 +154,7 @@ public class TaskEventMDB implements MessageListener {
             return ActivityLog.ActionType.TASK_UPDATED;
         }
         switch (eventType) {
+            // Task events
             case "TASK_CREATED":
                 return ActivityLog.ActionType.TASK_CREATED;
             case "STATUS_CHANGED":
@@ -141,6 +165,21 @@ public class TaskEventMDB implements MessageListener {
                 return ActivityLog.ActionType.TASK_UPDATED;
             case "TASK_ASSIGNED":
                 return ActivityLog.ActionType.TASK_ASSIGNED;
+
+            // Board events
+            case "BOARD_CREATED":
+                return ActivityLog.ActionType.BOARD_CREATED;
+
+            // Project events
+            case "PROJECT_CREATED":
+                return ActivityLog.ActionType.PROJECT_CREATED;
+            case "PROJECT_UPDATED":
+                return ActivityLog.ActionType.PROJECT_UPDATED;
+            case "MEMBER_ADDED":
+                return ActivityLog.ActionType.MEMBER_ADDED;
+            case "MEMBER_REMOVED":
+                return ActivityLog.ActionType.MEMBER_REMOVED;
+
             default:
                 System.err.println("[MDB] Unknown event type: " + eventType);
                 return ActivityLog.ActionType.TASK_UPDATED;
