@@ -10,7 +10,8 @@ import jakarta.persistence.EntityNotFoundException;
 import java.util.List;
 
 /**
- * Business logic for tasks - create, move (drag & drop), assign, comment, activity logging.
+ * Business logic for tasks - create, move (drag & drop), assign, comment.
+ * Activity logging is handled asynchronously via JMS + TaskEventMDB.
  */
 @Stateless
 public class TaskService {
@@ -29,9 +30,6 @@ public class TaskService {
 
     @Inject
     private UserRepository userRepository;
-
-    @Inject
-    private ActivityLogRepository activityLogRepository;
 
     @Inject
     private JmsProducer jmsProducer;
@@ -71,10 +69,14 @@ public class TaskService {
 
         Task savedTask = taskRepository.save(task);
 
-        createActivityLog(board.getProject(), board, createdBy, ActivityLog.ActionType.TASK_CREATED,
-                "Task created: " + title, savedTask);
-
-        jmsProducer.sendTaskEvent("TASK_CREATED", savedTask.getId(), createdById);
+        // Send async event instead of direct logging
+        jmsProducer.sendTaskEvent(
+                "TASK_CREATED",
+                savedTask.getId(),
+                createdById,
+                boardId,
+                "Task created: " + title
+        );
 
         return savedTask;
     }
@@ -103,11 +105,13 @@ public class TaskService {
 
         Task updatedTask = taskRepository.update(task);
 
-        // Log the status change
-        createActivityLog(task.getBoard().getProject(), task.getBoard(), user, ActivityLog.ActionType.STATUS_CHANGED,
-                "Task moved from " + oldStatus + " to " + newStatus, updatedTask);
-
-        jmsProducer.sendTaskEvent("STATUS_CHANGED", taskId, userId);
+        jmsProducer.sendTaskEvent(
+                "STATUS_CHANGED",
+                taskId,
+                userId,
+                task.getBoard().getId(),
+                "Task moved from " + oldStatus + " to " + newStatus
+        );
 
         return updatedTask;
     }
@@ -138,33 +142,19 @@ public class TaskService {
 
         Comment savedComment = commentRepository.save(comment);
 
-        // Create activity log
-        createActivityLog(task.getBoard().getProject(), task.getBoard(), user, ActivityLog.ActionType.COMMENT_ADDED,
-                "Comment added to task: " + task.getTitle(), task);
-
-        jmsProducer.sendTaskEvent("COMMENT_ADDED", taskId, userId);
+        jmsProducer.sendTaskEvent(
+                "COMMENT_ADDED",
+                taskId,
+                userId,
+                task.getBoard().getId(),
+                "Comment added to task: " + task.getTitle()
+        );
 
         return savedComment;
     }
 
     /**
-     * Internal helper method to create and persist activity log entries.
-     *
-     * @param project    the project associated with the activity
-     * @param user       the user who performed the action
-     * @param actionType the type of action being logged
-     * @param details    a descriptive string of the action
-     * @param task       the task related to the activity
-     */
-    private void createActivityLog(Project project, Board board, User user, ActivityLog.ActionType actionType,
-                                   String details, Task task) {
-        ActivityLog log = new ActivityLog(project, board, user, actionType, details);
-        log.setTask(task);                    // now works because we added the field
-        activityLogRepository.save(log);
-    }
-
-    /**
-     * Updates a task's details (assignee, description, due date) and logs changes.
+     * Updates a task's details (assignee, description, due date) and sends async event.
      *
      * @param task           the task to update (already modified by the bean)
      * @param user           the user who performed the update
@@ -172,7 +162,6 @@ public class TaskService {
      */
     public Task updateTask(Task task, User user, Long oldAssigneeId) {
         Board board = task.getBoard();
-        Project project = board.getProject();
 
         // Detect assignee change
         Long newAssigneeId = (task.getAssignee() != null) ? task.getAssignee().getId() : null;
@@ -182,12 +171,25 @@ public class TaskService {
         Task updatedTask = taskRepository.update(task);
 
         if (assigneeChanged) {
-            String assigneeName = (task.getAssignee() != null) ? task.getAssignee().getUsername() : "Unassigned";
-            createActivityLog(project, board, user, ActivityLog.ActionType.TASK_ASSIGNED,
-                    "Task '" + task.getTitle() + "' assigned to " + assigneeName, updatedTask);
+            String assigneeName = (task.getAssignee() != null)
+                    ? task.getAssignee().getUsername()
+                    : "Unassigned";
+
+            jmsProducer.sendTaskEvent(
+                    "TASK_ASSIGNED",
+                    updatedTask.getId(),
+                    user.getId(),
+                    board.getId(),
+                    "Task '" + task.getTitle() + "' assigned to " + assigneeName
+            );
         } else {
-            createActivityLog(project, board, user, ActivityLog.ActionType.TASK_UPDATED,
-                    "Task updated: " + task.getTitle(), updatedTask);
+            jmsProducer.sendTaskEvent(
+                    "TASK_UPDATED",
+                    updatedTask.getId(),
+                    user.getId(),
+                    board.getId(),
+                    "Task updated: " + task.getTitle()
+            );
         }
 
         return updatedTask;

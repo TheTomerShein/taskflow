@@ -5,31 +5,46 @@ import jakarta.ejb.Stateless;
 import jakarta.inject.Inject;
 import jakarta.jms.JMSContext;
 import jakarta.jms.Queue;
+import jakarta.json.Json;
+import jakarta.json.JsonObjectBuilder;
 
+/**
+ * JMS producer for sending task events as JSON messages to the TaskEventsQueue.
+ */
 @Stateless
 public class JmsProducer {
 
-    // הזרקת הקשר ה-JMS (מחליף את ה-ConnectionFactory הישן)
     @Inject
     private JMSContext jmsContext;
 
-    // הזרקת התור (Queue) שיצרת בשרת ה-Payara
     @Resource(lookup = "jms/TaskEventsQueue")
     private Queue taskEventsQueue;
 
     /**
-     * פונקציה לשליחת אירוע המשימה לתור
+     * Sends a structured JSON event to the TaskEventsQueue.
+     *
+     * @param eventType type of event (e.g. TASK_CREATED, STATUS_CHANGED)
+     * @param taskId    the task ID (may be null for non-task events)
+     * @param userId    the user who triggered the event
+     * @param boardId   the board ID associated with the event
+     * @param details   human-readable description of the event
      */
-    public void sendTaskEvent(String eventType, Long taskId, Long userId) {
+    public void sendTaskEvent(String eventType, Long taskId, Long userId, Long boardId, String details) {
         try {
-            String messagePayload = String.format("Event: %s, TaskID: %d, UserID: %d", eventType, taskId, userId);
+            JsonObjectBuilder builder = Json.createObjectBuilder()
+                    .add("eventType", eventType)
+                    .add("taskId", taskId != null ? taskId : 0)
+                    .add("userId", userId != null ? userId : 0)
+                    .add("boardId", boardId != null ? boardId : 0)
+                    .add("details", details != null ? details : "");
 
-            // שליחת ההודעה לתור
-            jmsContext.createProducer().send(taskEventsQueue, messagePayload);
+            String jsonPayload = builder.build().toString();
 
-            System.out.println("JMS Message sent successfully: " + messagePayload);
+            jmsContext.createProducer().send(taskEventsQueue, jsonPayload);
+            System.out.println("[JMS] Event sent: " + jsonPayload);
+
         } catch (Exception e) {
-            System.err.println("Failed to send JMS message: " + e.getMessage());
+            System.err.println("[JMS] Failed to send event: " + e.getMessage());
             e.printStackTrace();
         }
     }
