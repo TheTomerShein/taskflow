@@ -4,7 +4,6 @@ import il.openu.taskflow.entity.*;
 import il.openu.taskflow.repository.*;
 import il.openu.taskflow.exception.UnauthorizedException;
 import jakarta.ejb.Stateless;
-import jakarta.enterprise.event.Event;
 import jakarta.inject.Inject;
 import jakarta.persistence.EntityNotFoundException;
 
@@ -33,7 +32,7 @@ public class TaskService {
     private UserRepository userRepository;
 
     @Inject
-    private Event<ActivityEvent> eventPublisher;
+    private JmsProducer jmsProducer;
 
     /**
      * Creates a new task in a specific board.
@@ -70,15 +69,15 @@ public class TaskService {
 
         Task savedTask = taskRepository.save(task);
 
-        // Fire CDI event — will be processed after transaction commits successfully
-        eventPublisher.fire(new ActivityEvent(
+        // Send async JMS event
+        jmsProducer.sendEvent(
                 "TASK_CREATED",
                 board.getProject().getId(),
                 boardId,
                 savedTask.getId(),
                 createdById,
                 "Task created: " + title
-        ));
+        );
 
         return savedTask;
     }
@@ -107,15 +106,15 @@ public class TaskService {
 
         Task updatedTask = taskRepository.update(task);
 
-        // Fire CDI event — will be processed after transaction commits successfully
-        eventPublisher.fire(new ActivityEvent(
+        // Send async JMS event
+        jmsProducer.sendEvent(
                 "STATUS_CHANGED",
                 task.getBoard().getProject().getId(),
                 task.getBoard().getId(),
                 taskId,
                 userId,
                 "Task moved from " + oldStatus + " to " + newStatus
-        ));
+        );
 
         return updatedTask;
     }
@@ -146,15 +145,15 @@ public class TaskService {
 
         Comment savedComment = commentRepository.save(comment);
 
-        // Fire CDI event — will be processed after transaction commits successfully
-        eventPublisher.fire(new ActivityEvent(
+        // Send async JMS event
+        jmsProducer.sendEvent(
                 "COMMENT_ADDED",
                 task.getBoard().getProject().getId(),
                 task.getBoard().getId(),
                 taskId,
                 userId,
                 "Comment added to task: " + task.getTitle()
-        ));
+        );
 
         return savedComment;
     }
@@ -181,25 +180,25 @@ public class TaskService {
                     ? task.getAssignee().getUsername()
                     : "Unassigned";
 
-            // Fire CDI event — will be processed after transaction commits successfully
-            eventPublisher.fire(new ActivityEvent(
+            // Send async JMS event
+            jmsProducer.sendEvent(
                     "TASK_ASSIGNED",
                     board.getProject().getId(),
                     board.getId(),
                     updatedTask.getId(),
                     user.getId(),
                     "Task '" + task.getTitle() + "' assigned to " + assigneeName
-            ));
+            );
         } else {
-            // Fire CDI event — will be processed after transaction commits successfully
-            eventPublisher.fire(new ActivityEvent(
+            // Send async JMS event
+            jmsProducer.sendEvent(
                     "TASK_UPDATED",
                     board.getProject().getId(),
                     board.getId(),
                     updatedTask.getId(),
                     user.getId(),
                     "Task updated: " + task.getTitle()
-            ));
+            );
         }
 
         return updatedTask;

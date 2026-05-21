@@ -5,7 +5,6 @@ import il.openu.taskflow.entity.User;
 import il.openu.taskflow.repository.ProjectRepository;
 import il.openu.taskflow.repository.UserRepository;
 import jakarta.ejb.Stateless;
-import jakarta.enterprise.event.Event;
 import jakarta.inject.Inject;
 
 import java.util.List;
@@ -24,7 +23,7 @@ public class ProjectService {
     private UserRepository userRepository;
 
     @Inject
-    private Event<ActivityEvent> eventPublisher;
+    private JmsProducer jmsProducer;
 
     /**
      * Creates a new project and sets the owner as the first member.
@@ -41,15 +40,15 @@ public class ProjectService {
         project.getMembers().add(owner);   // owner is also a member
         Project savedProject = projectRepository.save(project);
 
-        // Fire CDI event — will be processed after transaction commits successfully
-        eventPublisher.fire(new ActivityEvent(
+        // Send async JMS event
+        jmsProducer.sendEvent(
                 "PROJECT_CREATED",
                 savedProject.getId(),
                 null,
                 null,
                 owner.getId(),
                 "Project created: " + name
-        ));
+        );
 
         return savedProject;
     }
@@ -77,15 +76,15 @@ public class ProjectService {
         project.getMembers().add(user);
         projectRepository.update(project);
 
-        // Fire CDI event — will be processed after transaction commits successfully
-        eventPublisher.fire(new ActivityEvent(
+        // Send async JMS event
+        jmsProducer.sendEvent(
                 "MEMBER_ADDED",
                 project.getId(),
                 null,
                 null,
                 addedBy.getId(),
                 "Member added: " + user.getUsername()
-        ));
+        );
 
         return true;
     }
@@ -133,15 +132,15 @@ public class ProjectService {
         project.getMembers().remove(user);
         projectRepository.update(project);
 
-        // Fire CDI event — will be processed after transaction commits successfully
-        eventPublisher.fire(new ActivityEvent(
+        // Send async JMS event
+        jmsProducer.sendEvent(
                 "MEMBER_REMOVED",
                 project.getId(),
                 null,
                 null,
                 removedBy.getId(),
                 "Member removed: " + user.getUsername()
-        ));
+        );
 
         return true;
     }
@@ -155,15 +154,15 @@ public class ProjectService {
     public Project updateProject(Project project, User user) {
         Project updated = projectRepository.update(project);
 
-        // Fire CDI event — will be processed after transaction commits successfully
-        eventPublisher.fire(new ActivityEvent(
+        // Send async JMS event
+        jmsProducer.sendEvent(
                 "PROJECT_UPDATED",
                 updated.getId(),
                 null,
                 null,
                 user.getId(),
                 "Project updated: " + project.getName()
-        ));
+        );
 
         return updated;
     }

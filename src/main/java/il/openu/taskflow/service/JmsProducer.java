@@ -2,8 +2,8 @@ package il.openu.taskflow.service;
 
 import jakarta.annotation.Resource;
 import jakarta.ejb.Stateless;
-import jakarta.enterprise.event.Observes;
-import jakarta.enterprise.event.TransactionPhase;
+import jakarta.ejb.TransactionAttribute;
+import jakarta.ejb.TransactionAttributeType;
 import jakarta.inject.Inject;
 import jakarta.jms.JMSContext;
 import jakarta.jms.Queue;
@@ -25,7 +25,9 @@ public class JmsProducer {
 
     /**
      * Sends a generic structured JSON event to the TaskEventsQueue.
-     * Supports all entity types (project, board, task).
+     * Runs with NOT_SUPPORTED so the JMS send is NOT enlisted in the caller's transaction.
+     * This means the JMS broker delivers the message only AFTER the caller's DB transaction
+     * has committed, preventing the MDB from consuming the message before entities are visible in DB.
      *
      * @param eventType type of event (e.g. TASK_CREATED, BOARD_CREATED, PROJECT_CREATED)
      * @param projectId the project ID associated with the event (may be null)
@@ -34,6 +36,7 @@ public class JmsProducer {
      * @param userId    the user who triggered the event
      * @param details   human-readable description of the event
      */
+    @TransactionAttribute(TransactionAttributeType.NOT_SUPPORTED)
     public void sendEvent(String eventType, Long projectId, Long boardId, Long taskId, Long userId, String details) {
         try {
             JsonObjectBuilder builder = Json.createObjectBuilder()
@@ -69,20 +72,5 @@ public class JmsProducer {
         sendEvent(eventType, null, boardId, taskId, userId, details);
     }
 
-    /**
-     * Observes ActivityEvents and forwards them to the JMS queue.
-     * TransactionPhase.AFTER_SUCCESS ensures the database transaction has committed,
-     * avoiding race conditions where the MDB consumes the message before the entities
-     * are persisted.
-     */
-    public void observeActivityEvent(@Observes(during = TransactionPhase.AFTER_SUCCESS) ActivityEvent event) {
-        sendEvent(
-                event.getEventType(),
-                event.getProjectId(),
-                event.getBoardId(),
-                event.getTaskId(),
-                event.getUserId(),
-                event.getDetails()
-        );
-    }
+
 }

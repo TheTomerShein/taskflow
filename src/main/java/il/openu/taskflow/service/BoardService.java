@@ -5,7 +5,6 @@ import il.openu.taskflow.entity.Project;
 import il.openu.taskflow.entity.User;
 import il.openu.taskflow.repository.BoardRepository;
 import jakarta.ejb.Stateless;
-import jakarta.enterprise.event.Event;
 import jakarta.inject.Inject;
 
 /**
@@ -18,7 +17,7 @@ public class BoardService {
     private BoardRepository boardRepository;
 
     @Inject
-    private Event<ActivityEvent> eventPublisher;
+    private JmsProducer jmsProducer;
 
     /**
      * Creates a new board inside a project and logs the action asynchronously via JMS after transaction commit.
@@ -35,15 +34,15 @@ public class BoardService {
 
         Board savedBoard = boardRepository.save(board);
 
-        // Fire CDI event — will be processed after transaction commits successfully
-        eventPublisher.fire(new ActivityEvent(
+        // Send async JMS event
+        jmsProducer.sendEvent(
                 "BOARD_CREATED",
                 project.getId(),
                 savedBoard.getId(),
                 null,
                 user.getId(),
                 "Board created: " + name
-        ));
+        );
 
         return savedBoard;
     }
