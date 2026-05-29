@@ -44,15 +44,14 @@ public class TaskService {
      * @return the created task or null if failed
      */
     public Task createTask(String title, String description, Task.TaskStatus initialStatus,
-                           Long boardId, Long createdById, Long assigneeId) {
+                           Long boardId, Long createdById, Long assigneeId, java.time.LocalDateTime dueDate) {
         Board board = boardRepository.findById(boardId)
                 .orElseThrow(() -> new EntityNotFoundException("Board not found"));
         User createdBy = userRepository.findById(createdById)
                 .orElseThrow(() -> new EntityNotFoundException("User not found"));
 
-        if (!isProjectMember(createdById, board.getProject().getId())) {
-            throw new UnauthorizedException("User is not a member of this project");
-        }
+        validateProjectMembership(createdById, board.getProject().getId());
+        validateDueDate(dueDate);
 
         Task task = new Task();
         task.setTitle(title);
@@ -60,6 +59,7 @@ public class TaskService {
         task.setStatus(initialStatus != null ? initialStatus : Task.TaskStatus.TODO);
         task.setBoard(board);
         task.setCreatedBy(createdBy);
+        task.setDueDate(dueDate);
 
         if (assigneeId != null) {
             User assignee = userRepository.findById(assigneeId)
@@ -76,7 +76,7 @@ public class TaskService {
                 boardId,
                 savedTask.getId(),
                 createdById,
-                "Task created: " + title
+                "נוצרה משימה: " + title
         );
 
         return savedTask;
@@ -96,15 +96,15 @@ public class TaskService {
         User user = userRepository.findById(userId)
                 .orElseThrow(() -> new EntityNotFoundException("User not found"));
 
-        // Check if the user is a member of the project
-        if (!isProjectMember(userId, task.getBoard().getProject().getId())) {
-            throw new UnauthorizedException("User is not a member of this project");
-        }
+        validateProjectMembership(userId, task.getBoard().getProject().getId());
 
         Task.TaskStatus oldStatus = task.getStatus();
         task.setStatus(newStatus);
 
         Task updatedTask = taskRepository.update(task);
+
+        String hebrewOldStatus = oldStatus == Task.TaskStatus.TODO ? "לביצוע" : (oldStatus == Task.TaskStatus.IN_PROGRESS ? "בתהליך" : "הושלם");
+        String hebrewNewStatus = newStatus == Task.TaskStatus.TODO ? "לביצוע" : (newStatus == Task.TaskStatus.IN_PROGRESS ? "בתהליך" : "הושלם");
 
         // Send async JMS event
         jmsProducer.sendEvent(
@@ -113,7 +113,7 @@ public class TaskService {
                 task.getBoard().getId(),
                 taskId,
                 userId,
-                "Task moved from " + oldStatus + " to " + newStatus
+                "משימה הועברה מ-" + hebrewOldStatus + " ל-" + hebrewNewStatus
         );
 
         return updatedTask;
@@ -133,10 +133,7 @@ public class TaskService {
         User user = userRepository.findById(userId)
                 .orElseThrow(() -> new EntityNotFoundException("User not found"));
 
-        // Check if the user is a member of the project
-        if (!isProjectMember(userId, task.getBoard().getProject().getId())) {
-            throw new UnauthorizedException("User is not a member of this project");
-        }
+        validateProjectMembership(userId, task.getBoard().getProject().getId());
 
         Comment comment = new Comment();
         comment.setContent(content);
@@ -152,7 +149,7 @@ public class TaskService {
                 task.getBoard().getId(),
                 taskId,
                 userId,
-                "Comment added to task: " + task.getTitle()
+                "נוספה תגובה למשימה: " + task.getTitle()
         );
 
         return savedComment;
@@ -166,6 +163,7 @@ public class TaskService {
      * @param oldAssigneeId  the previous assignee ID (null if none), used for change detection
      */
     public Task updateTask(Task task, User user, Long oldAssigneeId) {
+        validateDueDate(task.getDueDate());
         Board board = task.getBoard();
 
         // Detect assignee change
@@ -187,7 +185,7 @@ public class TaskService {
                     board.getId(),
                     updatedTask.getId(),
                     user.getId(),
-                    "Task '" + task.getTitle() + "' assigned to " + assigneeName
+                    "המשימה '" + task.getTitle() + "' שויכה ל-" + assigneeName
             );
         } else {
             // Send async JMS event
@@ -197,7 +195,7 @@ public class TaskService {
                     board.getId(),
                     updatedTask.getId(),
                     user.getId(),
-                    "Task updated: " + task.getTitle()
+                    "משימה עודכנה: " + task.getTitle()
             );
         }
 
@@ -205,16 +203,32 @@ public class TaskService {
     }
 
     /**
-     * Checks if a specific user is a member of a project.
+     * Validates that a user is a member of a project.
+     * Throws UnauthorizedException if not.
      *
      * @param userId    the ID of the user to check
      * @param projectId the ID of the project
-     * @return true if the user is a member of the project, false otherwise
+     * @throws UnauthorizedException if the user is not a member
      */
-    private boolean isProjectMember(Long userId, Long projectId) {
-        return projectRepository.findById(projectId)
+    private void validateProjectMembership(Long userId, Long projectId) {
+        boolean isMember = projectRepository.findById(projectId)
                 .map(project -> project.getMembers().stream().anyMatch(u -> u.getId().equals(userId)))
                 .orElse(false);
+        if (!isMember) {
+            throw new UnauthorizedException("User is not a member of this project");
+        }
+    }
+
+    /**
+     * Validates that a due date, if provided, is not in the past.
+     *
+     * @param dueDate the due date to validate (may be null)
+     * @throws IllegalArgumentException if the due date is in the past
+     */
+    private void validateDueDate(java.time.LocalDateTime dueDate) {
+        if (dueDate != null && dueDate.isBefore(java.time.LocalDateTime.now())) {
+            throw new IllegalArgumentException("Due date must be today or in the future");
+        }
     }
 
     /**

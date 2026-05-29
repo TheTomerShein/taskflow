@@ -23,7 +23,7 @@ public class ProjectRepository extends AbstractRepository<Project> {
      */
     public List<Project> findByMember(Long userId) {
         return em.createQuery(
-                        "SELECT DISTINCT p FROM Project p JOIN p.members m WHERE m.id = :userId",
+                        "SELECT DISTINCT p FROM Project p JOIN p.members m WHERE m.id = :userId ORDER BY p.createdAt DESC",
                         Project.class)
                 .setParameter("userId", userId)
                 .getResultList();

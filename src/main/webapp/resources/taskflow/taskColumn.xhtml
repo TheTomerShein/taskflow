@@ -1,0 +1,72 @@
+<?xml version="1.0" encoding="UTF-8"?>
+<!DOCTYPE html>
+<html xmlns="http://www.w3.org/1999/xhtml"
+      xmlns:h="jakarta.faces.html"
+      xmlns:f="jakarta.faces.core"
+      xmlns:ui="jakarta.faces.facelets"
+      xmlns:p="http://primefaces.org/ui"
+      xmlns:pt="jakarta.faces.passthrough"
+      xmlns:cc="jakarta.faces.composite">
+
+<cc:interface>
+    <cc:attribute name="columnId"       required="true"  type="java.lang.String" />
+    <cc:attribute name="containerId"    required="true"  type="java.lang.String" />
+    <cc:attribute name="headerClass"    required="true"  type="java.lang.String" />
+    <cc:attribute name="headerLabel"    required="true"  type="java.lang.String" />
+    <cc:attribute name="badgeStyle"     required="true"  type="java.lang.String" />
+    <cc:attribute name="tasks"          required="true" />
+    <cc:attribute name="statusCss"      required="true"  type="java.lang.String" />
+    <cc:attribute name="statusBadgeClass" required="true" type="java.lang.String" />
+    <cc:attribute name="statusBadgeText"  required="true" type="java.lang.String" />
+    <cc:attribute name="statusIndex"    required="true"  type="java.lang.Integer" />
+    <cc:attribute name="plusBtnStyle"   required="true"  type="java.lang.String" />
+    <cc:attribute name="emptyText"      required="true"  type="java.lang.String" />
+</cc:interface>
+
+<cc:implementation>
+    <p:outputPanel id="#{cc.attrs.columnId}" layout="block" styleClass="kanban-column">
+        <div class="kanban-column-header #{cc.attrs.headerClass}">
+            <span>
+                #{cc.attrs.headerLabel}
+                <span class="badge" style="#{cc.attrs.badgeStyle}">
+                    #{cc.attrs.tasks.size()}
+                </span>
+            </span>
+            <p:commandButton icon="pi pi-plus" styleClass="#{cc.attrs.plusBtnStyle}"
+                actionListener="#{kanbanBean.setNewTaskStatus(kanbanBean.availableStatuses[cc.attrs.statusIndex])}"
+                oncomplete="PF('newTaskDialog').show()" update=":newTaskDialog" process="@this" />
+        </div>
+        <div id="#{cc.attrs.containerId}" class="column-tasks">
+            <ui:repeat value="#{cc.attrs.tasks}" var="task" varStatus="loop">
+                <h:panelGroup layout="block" styleClass="task-card #{cc.attrs.statusCss}"
+                    pt:data-task-id="#{task.id}">
+                    <f:attribute name="taskId" value="#{task.id}" />
+                    <div class="task-title">#{task.title}</div>
+                    <div class="task-desc">
+                        <h:outputText
+                            value="#{empty task.description ? 'No description provided.' : (task.description.length() gt 70 ? task.description.substring(0,67).concat('...') : task.description)}" />
+                    </div>
+                    <div class="task-footer">
+                        <div class="creator-info">
+                            <span class="avatar">
+                                #{task.createdBy != null ?
+                                task.createdBy.username.substring(0,1).toUpperCase() : '?'}
+                            </span>
+                            <span>#{task.createdBy != null ? task.createdBy.username : ''}</span>
+                        </div>
+                        <span class="status-badge #{cc.attrs.statusBadgeClass}">#{cc.attrs.statusBadgeText}</span>
+                        <p:commandButton icon="pi pi-eye" styleClass="ui-button-info ui-button-small"
+                            actionListener="#{kanbanBean.viewTask(task)}"
+                            oncomplete="PF('taskDetailDialog').show()" update=":taskDetailDialog"
+                            process="@this" />
+                    </div>
+                </h:panelGroup>
+            </ui:repeat>
+            <h:panelGroup layout="block" styleClass="empty-state" rendered="#{empty cc.attrs.tasks}">
+                #{cc.attrs.emptyText}
+            </h:panelGroup>
+        </div>
+    </p:outputPanel>
+</cc:implementation>
+
+</html>

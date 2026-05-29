@@ -41,7 +41,7 @@ public class BoardService {
                 savedBoard.getId(),
                 null,
                 user.getId(),
-                "Board created: " + name
+                "לוח נוצר: " + name
         );
 
         return savedBoard;

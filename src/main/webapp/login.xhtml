@@ -1,43 +1,29 @@
 <?xml version="1.0" encoding="UTF-8"?>
 <!DOCTYPE html
     PUBLIC "-//W3C//DTD XHTML 1.0 Transitional//EN" "http://www.w3.org/TR/xhtml1/DTD/xhtml1-transitional.dtd">
-<html xmlns="http://www.w3.org/1999/xhtml"
-      xmlns:h="http://xmlns.jcp.org/jsf/html"
-      xmlns:f="http://xmlns.jcp.org/jsf/core"
-      xmlns:p="http://primefaces.org/ui" dir="rtl">
+<html xmlns="http://www.w3.org/1999/xhtml" xmlns:h="http://xmlns.jcp.org/jsf/html"
+    xmlns:f="http://xmlns.jcp.org/jsf/core" xmlns:p="http://primefaces.org/ui" dir="rtl">
 
 <h:head>
     <title>TaskFlow - התחברות</title>
-    <link href="https://fonts.googleapis.com/css2?family=Inter:wght@400;600;700;800&amp;display=swap" rel="stylesheet" />
+    <link href="https://fonts.googleapis.com/css2?family=Inter:wght@400;600;700;800&amp;display=swap"
+        rel="stylesheet" />
+    <h:outputStylesheet library="css" name="common.css" />
     <style type="text/css">
-        * {
-            margin: 0;
-            padding: 0;
-            box-sizing: border-box;
-        }
-
         body {
-            font-family: 'Inter', sans-serif;
-            background: #f5f5f7;
-            min-height: 100vh;
             display: flex;
             align-items: center;
             justify-content: center;
-            direction: rtl;
         }
 
+        /* ===== Auth Card ===== */
         .auth-card {
             background: #ffffff;
             border-radius: 24px;
             box-shadow: 0 4px 24px rgba(0, 0, 0, 0.08);
-            width: 420px;
+            width: 500px;
             padding: 40px 36px;
             animation: fadeIn 0.4s ease-out;
-        }
-
-        @keyframes fadeIn {
-            from { opacity: 0; transform: translateY(12px); }
-            to { opacity: 1; transform: translateY(0); }
         }
 
         /* ===== Pill Toggle ===== */
@@ -91,50 +77,16 @@
             margin-bottom: 28px;
         }
 
-        /* ===== Form Groups ===== */
+        /* ===== Auth form overrides ===== */
         .form-group {
             margin-bottom: 18px;
         }
 
-        .form-group label {
-            display: block;
-            font-size: 0.88em;
-            font-weight: 600;
-            color: #555;
-            margin-bottom: 6px;
-            text-align: right;
-        }
-
-        /* Override PrimeFaces input styles */
         .form-group .ui-inputfield,
         .form-group input[type="text"],
         .form-group input[type="password"] {
-            width: 100% !important;
-            padding: 14px 18px !important;
-            border: 1.5px solid #e8e8ec !important;
-            border-radius: 50px !important;
-            background: #fafafc !important;
-            font-size: 0.95em !important;
-            font-family: 'Inter', sans-serif !important;
-            color: #333 !important;
-            outline: none !important;
-            transition: border-color 0.2s ease, box-shadow 0.2s ease !important;
-            direction: ltr;
-            text-align: left;
-        }
-
-        .form-group .ui-inputfield:focus,
-        .form-group input[type="text"]:focus,
-        .form-group input[type="password"]:focus {
-            border-color: #9b59b6 !important;
-            box-shadow: 0 0 0 3px rgba(155, 89, 182, 0.12) !important;
-            background: #fff !important;
-        }
-
-        /* Password wrapper */
-        .form-group .ui-password {
-            width: 100% !important;
-            display: block !important;
+            direction: rtl;
+            text-align: right;
         }
 
         /* ===== Submit Button ===== */
@@ -162,38 +114,49 @@
             transform: translateY(0) !important;
         }
 
-        /* ===== Footer ===== */
-        .auth-footer {
-            text-align: center;
-            margin-top: 24px;
-            font-size: 0.82em;
-            color: #bbb;
-        }
-
         /* ===== Messages ===== */
-        .ui-messages,
-        .ui-growl {
-            direction: rtl;
-        }
-
         .auth-messages {
             margin-bottom: 16px;
         }
-
-        .auth-messages .ui-messages-error {
-            background: #fff0f0 !important;
-            border: 1px solid #ffcccc !important;
+        
+        .ui-messages > div {
+            display: flex !important;
+            align-items: center !important;
+            position: relative !important;
+            padding: 12px 16px !important;
             border-radius: 12px !important;
-            padding: 10px 16px !important;
-            color: #c0392b !important;
         }
 
-        .auth-messages .ui-messages-info {
-            background: #f0fff4 !important;
-            border: 1px solid #c6f6d5 !important;
-            border-radius: 12px !important;
-            padding: 10px 16px !important;
-            color: #27ae60 !important;
+        .ui-messages ul {
+            margin: 0 !important;
+            padding: 0 !important;
+            list-style-type: none !important;
+            flex: 1 !important;
+            margin-right: 12px !important;
+            margin-left: 28px !important;
+            text-align: right !important;
+        }
+
+        .ui-messages li {
+            display: block !important;
+            line-height: 1.4 !important;
+        }
+
+        .ui-messages-close {
+            position: absolute !important;
+            left: 12px !important;
+            right: auto !important;
+            top: 50% !important;
+            transform: translateY(-50%) !important;
+            margin: 0 !important;
+            float: none !important;
+        }
+
+        .ui-messages-error-icon, .ui-messages-info-icon, .ui-messages-warn-icon {
+            position: static !important;
+            display: block !important;
+            float: none !important;
+            margin: 0 !important;
         }
     </style>
 </h:head>
@@ -219,32 +182,27 @@
         <!-- Login Form -->
         <h:form id="loginForm">
             <div class="auth-messages">
-                <p:messages id="messages" closable="true" />
+                <p:messages id="messages" closable="true" showDetail="true" showSummary="false" />
             </div>
 
             <div class="form-group">
                 <label for="username">שם משתמש</label>
                 <p:inputText id="username" value="#{authBean.username}" required="true"
-                    requiredMessage="שם משתמש הוא שדה חובה"
-                    placeholder="הכנס שם משתמש" />
+                    requiredMessage="שם משתמש הוא שדה חובה" placeholder="הכנס שם משתמש" />
             </div>
 
             <div class="form-group">
                 <label for="password">סיסמה</label>
                 <p:password id="password" value="#{authBean.password}" required="true"
-                    requiredMessage="סיסמה היא שדה חובה"
-                    placeholder="••••••••"
-                    toggleMask="true" feedback="false" />
+                    requiredMessage="סיסמה היא שדה חובה" placeholder="••••••••" toggleMask="true" feedback="false"
+                    styleClass="ltr-input" />
             </div>
 
-            <p:commandButton value="התחבר לחשבון" action="#{authBean.login}"
-                update="messages" styleClass="auth-submit" />
+            <p:commandButton value="התחבר לחשבון" action="#{authBean.login}" update="messages"
+                styleClass="auth-submit" />
         </h:form>
 
-        <!-- Footer -->
-        <div class="auth-footer">
-            עיצוב מינימליסטי • בטוח ומאובטח
-        </div>
+
 
     </div>
 

@@ -2,6 +2,7 @@ package il.openu.taskflow.entity;
 
 import jakarta.persistence.*;
 import java.time.LocalDateTime;
+import jakarta.json.bind.annotation.JsonbTransient;
 import java.util.HashSet;
 import java.util.Set;
 
@@ -18,6 +19,7 @@ public class Board {
 
     @ManyToOne
     @JoinColumn(name = "project_id", nullable = false)
+    @JsonbTransient
     private Project project;
 
     @OneToMany(mappedBy = "board", cascade = CascadeType.ALL, orphanRemoval = true)

@@ -6,21 +6,15 @@ import il.openu.taskflow.entity.Project;
 import il.openu.taskflow.repository.ActivityLogRepository;
 import il.openu.taskflow.repository.BoardRepository;
 import il.openu.taskflow.service.ProjectService;
-import jakarta.annotation.PostConstruct;
-import jakarta.faces.application.FacesMessage;
-import jakarta.faces.context.FacesContext;
+
 import jakarta.faces.view.ViewScoped;
 import jakarta.inject.Inject;
 import jakarta.inject.Named;
-
-import java.io.Serializable;
 import java.util.List;
 
 @Named
 @ViewScoped
-public class ActivityBean implements Serializable {
-
-    private static final long serialVersionUID = 1L;
+public class ActivityBean extends BaseBean {
 
     @Inject
     private ActivityLogRepository activityLogRepository;
@@ -38,10 +32,7 @@ public class ActivityBean implements Serializable {
     private Board currentBoard;
     private List<ActivityLog> activityLogs;
 
-    @PostConstruct
-    public void init() {
-        // Initialized via viewParam setters
-    }
+
 
     public void loadLogs() {
         if (boardId != null && boardId > 0) {
@@ -50,16 +41,14 @@ public class ActivityBean implements Serializable {
                 currentProject = currentBoard.getProject();
                 activityLogs = activityLogRepository.findByBoardId(boardId);
             } else {
-                FacesContext.getCurrentInstance().addMessage(null,
-                        new FacesMessage(FacesMessage.SEVERITY_ERROR, "Error", "Board not found"));
+                addErrorMessage("Error", "Board not found");
             }
         } else if (projectId != null && projectId > 0) {
             currentProject = projectService.findById(projectId).orElse(null);
             if (currentProject != null) {
                 activityLogs = activityLogRepository.findByProjectId(projectId);
             } else {
-                FacesContext.getCurrentInstance().addMessage(null,
-                        new FacesMessage(FacesMessage.SEVERITY_ERROR, "Error", "Project not found"));
+                addErrorMessage("Error", "Project not found");
             }
         }
     }

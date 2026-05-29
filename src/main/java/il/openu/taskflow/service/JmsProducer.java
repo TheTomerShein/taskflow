@@ -6,6 +6,7 @@ import jakarta.ejb.TransactionAttribute;
 import jakarta.ejb.TransactionAttributeType;
 import jakarta.inject.Inject;
 import jakarta.jms.JMSContext;
+import jakarta.jms.JMSDestinationDefinition;
 import jakarta.jms.Queue;
 import jakarta.json.Json;
 import jakarta.json.JsonObjectBuilder;
@@ -13,14 +14,24 @@ import jakarta.json.JsonObjectBuilder;
 /**
  * JMS producer for sending activity events as JSON messages to the TaskEventsQueue.
  * Supports task, board, and project-level events.
+ *
+ * The @JMSDestinationDefinition annotation automatically creates the JMS queue
+ * in the application server when the application is deployed — no manual
+ * Payara admin setup or glassfish-resources.xml is required.
  */
+@JMSDestinationDefinition(
+        name = "jms/TaskEventsQueue",
+        interfaceName = "jakarta.jms.Queue",
+        destinationName = "TaskEventsQueue",
+        description = "Queue for async activity log events"
+)
 @Stateless
 public class JmsProducer {
 
     @Inject
     private JMSContext jmsContext;
 
-    @Resource(lookup = "jms/TaskEventsQueue")
+    @Resource(lookup = "jms/TaskEventsQueue", type = Queue.class)
     private Queue taskEventsQueue;
 
     /**

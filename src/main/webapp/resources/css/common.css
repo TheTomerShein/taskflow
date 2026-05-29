@@ -1,0 +1,214 @@
+/* ============================================
+   TaskFlow – Shared Styles (common.css)
+   Extracted from login, register, dashboard,
+   project, activity, settings, kanban XHTML files
+   ============================================ */
+
+/* ===== Reset ===== */
+* {
+    margin: 0;
+    padding: 0;
+    box-sizing: border-box;
+}
+
+/* ===== Base Body ===== */
+body {
+    font-family: 'Inter', sans-serif;
+    background: #f5f5f7;
+    min-height: 100vh;
+    direction: rtl;
+}
+
+/* ===== Fade-in Animation ===== */
+@keyframes fadeIn {
+    from { opacity: 0; transform: translateY(12px); }
+    to   { opacity: 1; transform: translateY(0); }
+}
+
+/* ===== Form Groups ===== */
+.form-group {
+    margin-bottom: 16px;
+}
+
+.form-group label {
+    display: block;
+    font-size: 0.88em;
+    font-weight: 600;
+    color: #555;
+    margin-bottom: 6px;
+    text-align: right;
+}
+
+/* Override PrimeFaces input styles */
+.form-group .ui-inputfield,
+.form-group input[type="text"],
+.form-group input[type="password"],
+.form-group textarea {
+    width: 100% !important;
+    padding: 14px 18px !important;
+    border: 1.5px solid #e8e8ec !important;
+    border-radius: 50px !important;
+    background: #fafafc !important;
+    font-size: 0.95em !important;
+    font-family: 'Inter', sans-serif !important;
+    color: #333 !important;
+    outline: none !important;
+    transition: border-color 0.2s ease, box-shadow 0.2s ease !important;
+}
+
+.form-group .ui-inputfield:focus,
+.form-group input[type="text"]:focus,
+.form-group input[type="password"]:focus,
+.form-group textarea:focus {
+    border-color: #9b59b6 !important;
+    box-shadow: 0 0 0 3px rgba(155, 89, 182, 0.12) !important;
+    background: #fff !important;
+}
+
+/* Textarea border-radius override */
+.form-group textarea,
+.form-group .ui-inputtextarea {
+    border-radius: 16px !important;
+}
+
+/* Password wrapper */
+.form-group .ui-password {
+    width: 100% !important;
+    display: block !important;
+}
+
+/* LTR input override (email, password fields) */
+.ltr-input, .ltr-input input, .ltr-input .ui-inputfield {
+    direction: ltr !important;
+    text-align: left !important;
+}
+
+/* ===== Pill Buttons ===== */
+.btn-pill {
+    padding: 10px 20px !important;
+    border: none !important;
+    border-radius: 50px !important;
+    font-weight: 600 !important;
+    font-family: 'Inter', sans-serif !important;
+    font-size: 0.88em !important;
+    cursor: pointer !important;
+    transition: all 0.2s ease !important;
+}
+
+.btn-purple {
+    background: linear-gradient(135deg, #9b59b6 0%, #8e44ad 100%) !important;
+    color: #fff !important;
+}
+
+.btn-purple:hover {
+    transform: translateY(-1px) !important;
+    box-shadow: 0 4px 16px rgba(155, 89, 182, 0.3) !important;
+}
+
+.btn-ghost {
+    background: #f5f5f7 !important;
+    color: #555 !important;
+}
+
+.btn-ghost:hover {
+    background: #ececee !important;
+}
+
+.btn-warn {
+    background: #fff8e1 !important;
+    color: #f59e0b !important;
+}
+
+.btn-warn:hover {
+    background: #fef3c7 !important;
+}
+
+.btn-danger {
+    background: #f5f5f7 !important;
+    color: #c0392b !important;
+}
+
+.btn-danger:hover {
+    background: #fdecea !important;
+}
+
+/* ===== Section Title ===== */
+.section-title {
+    font-size: 1.15em;
+    font-weight: 700;
+    color: #1a1a2e;
+    margin-bottom: 16px;
+}
+
+/* ===== Empty State ===== */
+.empty-state {
+    text-align: center;
+    padding: 50px 20px;
+    color: #bbb;
+}
+
+.empty-state i {
+    font-size: 3em;
+    color: #e0d5f0;
+    margin-bottom: 12px;
+}
+
+.empty-state h3 {
+    color: #999;
+    font-weight: 600;
+}
+
+/* ===== Message Overrides ===== */
+.ui-messages > div {
+    display: flex !important;
+    align-items: center !important;
+    position: relative !important;
+    padding: 12px 16px !important;
+    border-radius: 12px !important;
+}
+
+.ui-messages ul {
+    margin: 0 !important;
+    padding: 0 !important;
+    list-style-type: none !important;
+    flex: 1 !important;
+    margin-right: 12px !important;
+    margin-left: 28px !important;
+    text-align: right !important;
+}
+
+.ui-messages li {
+    display: block !important;
+    line-height: 1.4 !important;
+}
+
+/* Fix close button position in RTL */
+.ui-messages-close {
+    position: absolute !important;
+    left: 12px !important;
+    right: auto !important;
+    top: 50% !important;
+    transform: translateY(-50%) !important;
+    margin: 0 !important;
+    float: none !important;
+}
+
+/* Fix icon position */
+.ui-messages-error-icon, .ui-messages-info-icon, .ui-messages-warn-icon {
+    position: static !important;
+    display: block !important;
+    float: none !important;
+    margin: 0 !important;
+}
+
+.ui-messages-error {
+    background: #fff0f0 !important;
+    border: 1px solid #ffcccc !important;
+    color: #c0392b !important;
+}
+
+.ui-messages-info {
+    background: #f0fff4 !important;
+    border: 1px solid #c6f6d5 !important;
+    color: #27ae60 !important;
+}

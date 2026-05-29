@@ -9,8 +9,8 @@
         <description>TaskFlow Persistence Unit</description>
 
         <!-- DataSource -->
-        <jta-data-source>jdbc/TaskFlowDS</jta-data-source>
-
+        <jta-data-source>java:app/jdbc/TaskFlowDS</jta-data-source>
+        
         <!-- Entities -->
         <class>il.openu.taskflow.entity.User</class>
         <class>il.openu.taskflow.entity.Project</class>
@@ -23,9 +23,8 @@
         <shared-cache-mode>NONE</shared-cache-mode>
 
         <properties>
-            <!--><property name="jakarta.persistence.schema-generation.database.action" value="drop-and-create"/><!-->
             <property name="jakarta.persistence.schema-generation.database.action" value="none"/>
-            <!--><property name="eclipselink.ddl-generation" value="drop-and-create-tables"/><!-->
+            <property name="eclipselink.ddl-generation" value="none"/>
 
             <property name="eclipselink.logging.level" value="INFO"/>
             <property name="eclipselink.logging.level.sql" value="WARNING"/>

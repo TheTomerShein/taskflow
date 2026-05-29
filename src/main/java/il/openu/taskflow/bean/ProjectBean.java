@@ -5,19 +5,16 @@ import il.openu.taskflow.entity.Project;
 import il.openu.taskflow.repository.BoardRepository;
 import il.openu.taskflow.service.BoardService;
 import il.openu.taskflow.service.ProjectService;
-import jakarta.annotation.PostConstruct;
+
 import jakarta.faces.view.ViewScoped;
-import jakarta.faces.application.FacesMessage;
-import jakarta.faces.context.FacesContext;
 import jakarta.inject.Inject;
 import jakarta.inject.Named;
 
-import java.io.Serializable;
 import java.util.List;
 
 @Named
 @ViewScoped
-public class ProjectBean implements Serializable {
+public class ProjectBean extends BaseBean {
 
     @Inject
     private ProjectService projectService;
@@ -28,8 +25,6 @@ public class ProjectBean implements Serializable {
     @Inject
     private BoardService boardService;
 
-    @Inject
-    private AuthBean authBean;
 
     private Long projectId;
     private Project currentProject;
@@ -38,10 +33,7 @@ public class ProjectBean implements Serializable {
     private String newBoardName;
     private String newBoardDescription;
 
-    @PostConstruct
-    public void init() {
-        // Will be called after viewParam sets projectId
-    }
+
 
     public void loadProject() {
         if (projectId != null) {
@@ -49,23 +41,20 @@ public class ProjectBean implements Serializable {
             if (currentProject != null) {
                 boards = boardRepository.findByProjectId(projectId);
             } else {
-                FacesContext.getCurrentInstance().addMessage(null,
-                        new FacesMessage(FacesMessage.SEVERITY_ERROR, "שגיאה", "פרויקט לא נמצא"));
+                addErrorMessage("שגיאה", "פרויקט לא נמצא");
             }
         }
     }
 
     public String createBoard() {
         if (currentProject == null || newBoardName == null || newBoardName.trim().isEmpty()) {
-            FacesContext.getCurrentInstance().addMessage(null,
-                    new FacesMessage(FacesMessage.SEVERITY_ERROR, "שגיאה", "שם הלוח חובה"));
+            addErrorMessage("שגיאה", "שם הלוח חובה");
             return null;
         }
 
-        boardService.createBoard(newBoardName.trim(), currentProject, authBean.getCurrentUser());
+        boardService.createBoard(newBoardName.trim(), currentProject, getAuthBean().getCurrentUser());
 
-        FacesContext.getCurrentInstance().addMessage(null,
-                new FacesMessage(FacesMessage.SEVERITY_INFO, "לוח נוצר", "הלוח '" + newBoardName + "' נוצר בהצלחה"));
+        addInfoMessage("לוח נוצר", "הלוח '" + newBoardName + "' נוצר בהצלחה");
 
         newBoardName = null;
         newBoardDescription = null;
@@ -98,7 +87,7 @@ public class ProjectBean implements Serializable {
      * Returns true if the current logged-in user is the owner of this project.
      */
     public boolean isOwner() {
-        if (currentProject == null || authBean.getCurrentUser() == null) return false;
-        return currentProject.getOwner().getId().equals(authBean.getCurrentUser().getId());
+        if (currentProject == null || getAuthBean().getCurrentUser() == null) return false;
+        return currentProject.isOwner(getAuthBean().getCurrentUser());
     }
 }

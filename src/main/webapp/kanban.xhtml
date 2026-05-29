@@ -1,7 +1,8 @@
 <?xml version="1.0" encoding="UTF-8"?>
 <!DOCTYPE html>
 <html xmlns="http://www.w3.org/1999/xhtml" xmlns:h="jakarta.faces.html" xmlns:f="jakarta.faces.core"
-    xmlns:ui="jakarta.faces.facelets" xmlns:p="http://primefaces.org/ui" xmlns:pt="jakarta.faces.passthrough">
+    xmlns:ui="jakarta.faces.facelets" xmlns:p="http://primefaces.org/ui" xmlns:pt="jakarta.faces.passthrough"
+    xmlns:tf="jakarta.faces.composite/taskflow" dir="rtl">
 
 <f:metadata>
     <f:viewParam name="boardId" value="#{kanbanBean.currentBoardId}" />
@@ -9,11 +10,13 @@
 
 <h:head>
     <title>Kanban - #{kanbanBean.currentBoardName}</title>
-    <link href="https://fonts.googleapis.com/css2?family=Inter:wght@400;600;700;800&amp;display=swap" rel="stylesheet" />
+    <link href="https://fonts.googleapis.com/css2?family=Inter:wght@400;600;700;800&amp;display=swap"
+        rel="stylesheet" />
+    <h:outputStylesheet library="css" name="common.css" />
     <style type="text/css">
-        * { margin: 0; padding: 0; box-sizing: border-box; }
-
-        body { font-family: 'Inter', sans-serif; }
+        body {
+            font-family: 'Inter', sans-serif;
+        }
 
         .kanban-container {
             padding: 24px;
@@ -33,81 +36,221 @@
             animation: fadeIn 0.4s ease-out;
         }
 
-        @keyframes fadeIn {
-            from { opacity: 0; transform: translateY(12px); }
-            to { opacity: 1; transform: translateY(0); }
+        .kanban-header h2 {
+            margin: 0;
+            color: #1a1a2e;
+            font-size: 1.5em;
+            font-weight: 800;
         }
 
-        .kanban-header h2 { margin: 0; color: #1a1a2e; font-size: 1.5em; font-weight: 800; }
-        .kanban-header h2 i { color: #9b59b6; }
-        .kanban-header .subtitle { color: #999; margin-top: 4px; font-size: 0.9em; }
+        .kanban-header h2 i {
+            color: #9b59b6;
+        }
 
+        .kanban-header .subtitle {
+            color: #999;
+            margin-top: 4px;
+            font-size: 0.9em;
+        }
+
+        /* ===== Kanban-specific btn-pill overrides ===== */
         .btn-pill {
-            padding: 9px 18px !important; border: none !important; border-radius: 50px !important;
-            font-weight: 600 !important; font-family: 'Inter', sans-serif !important;
-            font-size: 0.85em !important; cursor: pointer !important; transition: all 0.2s ease !important;
+            padding: 9px 18px !important;
+            font-size: 0.85em !important;
         }
-        .btn-purple { background: linear-gradient(135deg, #9b59b6 0%, #8e44ad 100%) !important; color: #fff !important; }
-        .btn-purple:hover { transform: translateY(-1px) !important; box-shadow: 0 4px 16px rgba(155, 89, 182, 0.3) !important; }
-        .btn-ghost { background: #f0f0f2 !important; color: #555 !important; }
-        .btn-ghost:hover { background: #e5e5e8 !important; }
-        .btn-warn { background: #fff8e1 !important; color: #f59e0b !important; }
-        .btn-danger { background: #f5f5f7 !important; color: #c0392b !important; }
-        .btn-danger:hover { background: #fdecea !important; }
 
-        .flex-columns { display: flex; gap: 14px; width: 100%; align-items: stretch; }
+        .btn-ghost {
+            background: #f0f0f2 !important;
+        }
+
+        .btn-ghost:hover {
+            background: #e5e5e8 !important;
+        }
+
+        .flex-columns {
+            display: flex;
+            gap: 14px;
+            width: 100%;
+            align-items: stretch;
+        }
 
         .kanban-column {
-            background: #ffffff; border-radius: 20px; padding: 14px;
-            min-height: 620px; max-height: calc(100vh - 180px); overflow-y: auto;
-            box-shadow: 0 2px 12px rgba(0, 0, 0, 0.04); border: 1px solid #f0f0f2;
-            display: flex; flex-direction: column; flex: 1;
+            background: #ffffff;
+            border-radius: 20px;
+            padding: 14px;
+            min-height: 620px;
+            max-height: calc(100vh - 180px);
+            overflow-y: auto;
+            box-shadow: 0 2px 12px rgba(0, 0, 0, 0.04);
+            border: 1px solid #f0f0f2;
+            display: flex;
+            flex-direction: column;
+            flex: 1;
         }
 
         .kanban-column-header {
-            padding: 14px 18px; border-radius: 14px; margin-bottom: 14px;
-            font-weight: 700; font-size: 0.95em; display: flex;
-            justify-content: space-between; align-items: center; flex-shrink: 0;
+            padding: 14px 18px;
+            border-radius: 14px;
+            margin-bottom: 14px;
+            font-weight: 700;
+            font-size: 0.95em;
+            display: flex;
+            justify-content: space-between;
+            align-items: center;
+            flex-shrink: 0;
         }
 
-        .todo-header { background: #ede9fe; color: #7c3aed; }
-        .inprogress-header { background: #fff7ed; color: #ea580c; }
-        .done-header { background: #ecfdf5; color: #059669; }
+        .todo-header {
+            background: #ede9fe;
+            color: #7c3aed;
+        }
+
+        .inprogress-header {
+            background: #fff7ed;
+            color: #ea580c;
+        }
+
+        .done-header {
+            background: #ecfdf5;
+            color: #059669;
+        }
 
         .task-card {
-            background: #fafafc; border-radius: 16px; padding: 16px;
-            margin-bottom: 10px; box-shadow: 0 1px 4px rgba(0, 0, 0, 0.04);
-            border-right: 4px solid transparent; transition: transform 0.2s ease, box-shadow 0.2s ease;
+            background: #fafafc;
+            border-radius: 16px;
+            padding: 16px;
+            margin-bottom: 10px;
+            box-shadow: 0 1px 4px rgba(0, 0, 0, 0.04);
+            border-right: 4px solid transparent;
+            transition: transform 0.2s ease, box-shadow 0.2s ease;
             cursor: grab;
         }
-        .task-card:active { cursor: grabbing; }
-        .task-card:hover { box-shadow: 0 6px 20px rgba(155, 89, 182, 0.1); transform: translateY(-2px); }
-        .task-card.todo { border-right-color: #9b59b6; }
-        .task-card.in-progress { border-right-color: #f59e0b; }
-        .task-card.done { border-right-color: #10b981; }
 
-        .task-title { font-weight: 700; color: #1a1a2e; font-size: 0.95em; margin-bottom: 6px; }
-        .task-desc { font-size: 0.82em; color: #999; margin-bottom: 10px; line-height: 1.4;
-            display: -webkit-box; -webkit-line-clamp: 2; -webkit-box-orient: vertical; overflow: hidden; min-height: 2.4em; }
-
-        .task-footer { display: flex; justify-content: space-between; align-items: center; font-size: 0.78em; color: #bbb; }
-        .creator-info { display: flex; align-items: center; gap: 6px; }
-        .avatar {
-            width: 24px; height: 24px; background: linear-gradient(135deg, #9b59b6, #8e44ad);
-            color: white; border-radius: 50%; display: flex; align-items: center;
-            justify-content: center; font-size: 0.7em; font-weight: 700;
+        .task-card:active {
+            cursor: grabbing;
         }
 
-        .status-badge { padding: 2px 10px; border-radius: 50px; font-size: 0.7em; font-weight: 600; text-transform: uppercase; }
-        .badge-todo { background: #ede9fe; color: #7c3aed; }
-        .badge-in-progress { background: #fff7ed; color: #ea580c; }
-        .badge-done { background: #ecfdf5; color: #059669; }
+        .task-card:hover {
+            box-shadow: 0 6px 20px rgba(155, 89, 182, 0.1);
+            transform: translateY(-2px);
+        }
 
-        .empty-state { text-align: center; padding: 50px 20px; color: #ccc; font-style: italic; }
-        .column-tasks { flex: 1; min-height: 100px; }
-        .kanban-ghost { opacity: 0.4; background-color: #f5f5f7; border: 2px dashed #d4b8e8; }
-        .kanban-fallback-drag { will-change: transform; pointer-events: none !important;
-            box-shadow: 0 12px 24px rgba(0, 0, 0, 0.2) !important; transform: rotate(3deg) scale(1.02); }
+        .task-card.todo {
+            border-right-color: #9b59b6;
+        }
+
+        .task-card.in-progress {
+            border-right-color: #f59e0b;
+        }
+
+        .task-card.done {
+            border-right-color: #10b981;
+        }
+
+        .task-title {
+            font-weight: 700;
+            color: #1a1a2e;
+            font-size: 0.95em;
+            margin-bottom: 6px;
+        }
+
+        .task-desc {
+            font-size: 0.82em;
+            color: #999;
+            margin-bottom: 10px;
+            line-height: 1.4;
+            display: -webkit-box;
+            -webkit-line-clamp: 2;
+            -webkit-box-orient: vertical;
+            overflow: hidden;
+            min-height: 2.4em;
+        }
+
+        .task-footer {
+            display: flex;
+            justify-content: space-between;
+            align-items: center;
+            font-size: 0.78em;
+            color: #bbb;
+        }
+
+        .creator-info {
+            display: flex;
+            align-items: center;
+            gap: 6px;
+        }
+
+        .avatar {
+            width: 24px;
+            height: 24px;
+            background: linear-gradient(135deg, #9b59b6, #8e44ad);
+            color: white;
+            border-radius: 50%;
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            font-size: 0.7em;
+            font-weight: 700;
+        }
+
+        .status-badge {
+            padding: 2px 10px;
+            border-radius: 50px;
+            font-size: 0.7em;
+            font-weight: 600;
+            text-transform: uppercase;
+        }
+
+        .badge-todo {
+            background: #ede9fe;
+            color: #7c3aed;
+        }
+
+        .badge-in-progress {
+            background: #fff7ed;
+            color: #ea580c;
+        }
+
+        .badge-done {
+            background: #ecfdf5;
+            color: #059669;
+        }
+
+        /* Kanban empty-state override */
+        .empty-state {
+            color: #ccc;
+            font-style: italic;
+        }
+
+        .column-tasks {
+            flex: 1;
+            min-height: 100px;
+        }
+
+        .kanban-ghost {
+            opacity: 0.4;
+            background-color: #f5f5f7;
+            border: 2px dashed #d4b8e8;
+        }
+
+        .kanban-fallback-drag {
+            will-change: transform;
+            pointer-events: none !important;
+            box-shadow: 0 12px 24px rgba(0, 0, 0, 0.2) !important;
+            transform: rotate(3deg) scale(1.02);
+        }
+
+        /* RTL overrides for PrimeFaces SelectOneMenu */
+        .ui-selectonemenu {
+            direction: rtl !important;
+            text-align: right !important;
+        }
+
+        .ui-selectonemenu .ui-selectonemenu-label {
+            text-align: right !important;
+            padding-right: 12px !important;
+            padding-left: 28px !important;
+        }
     </style>
 </h:head>
 
@@ -120,6 +263,10 @@
             <p:remoteCommand name="updateTaskStatusCmd" action="#{kanbanBean.onTaskDropFromJS}"
                 update="boardContainer globalMessages" oncomplete="initKanbanDND()" />
 
+            <!-- Poll database every 5 seconds and update the board UI -->
+            <p:poll interval="5" listener="#{kanbanBean.loadTasks}" update="boardContainer"
+                oncomplete="initKanbanDND()" />
+
             <!-- HEADER -->
             <div class="kanban-header">
                 <div>
@@ -128,203 +275,122 @@
                         #{kanbanBean.currentBoardName}
                     </h2>
                     <div class="subtitle">
-                        #{kanbanBean.currentProjectName} • Kanban Board
+                        #{kanbanBean.currentProjectName} • לוח קנבן
                     </div>
                 </div>
                 <div style="display:flex; gap:8px; align-items:center;">
-                    <p:button value="Activity Log" icon="pi pi-history" styleClass="btn-pill btn-warn"
+                    <p:button value="יומן פעילות" icon="pi pi-history" styleClass="btn-pill btn-warn"
                         outcome="activity?faces-redirect=true">
                         <f:param name="boardId" value="#{kanbanBean.currentBoardId}" />
                     </p:button>
-                    <p:commandButton value="Back to Project" icon="pi pi-arrow-left" action="#{kanbanBean.goToProject}"
+                    <p:commandButton value="חזור לפרויקט" icon="pi pi-arrow-right" action="#{kanbanBean.goToProject}"
                         ajax="false" styleClass="btn-pill btn-ghost" />
-                    <p:button value="Dashboard" icon="pi pi-home" styleClass="btn-pill btn-ghost"
+                    <p:button value="דשבורד" icon="pi pi-arrow-right" styleClass="btn-pill btn-ghost"
                         outcome="dashboard?faces-redirect=true" />
-                    <p:commandButton value="Logout" icon="pi pi-sign-out" styleClass="btn-pill btn-danger"
+                    <p:commandButton value="התנתק" icon="pi pi-sign-out" styleClass="btn-pill btn-danger"
                         action="#{authBean.logout}" ajax="false" immediate="true" />
                 </div>
             </div>
 
-            <p:growl id="globalMessages" showDetail="true" life="3000" autoUpdate="true" />
+            <p:growl id="globalMessages" showDetail="true" showSummary="false" life="3000" autoUpdate="true" />
 
-            <!-- KANBAN COLUMNS -->
+            <!-- KANBAN COLUMNS (using composite component) -->
             <h:panelGroup id="boardContainer" layout="block" styleClass="flex-columns">
 
                 <!-- TODO COLUMN -->
-                <p:outputPanel id="todoColumn" layout="block" styleClass="kanban-column">
-                    <div class="kanban-column-header todo-header">
-                        <span>
-                            TODO
-                            <span class="badge"
-                                style="background:#90caf9; color:white; padding:2px 9px; border-radius:12px;">
-                                #{kanbanBean.todoTasks.size()}
-                            </span>
-                        </span>
-                        <p:commandButton value="+" icon="pi pi-plus" styleClass="ui-button-success ui-button-small"
-                            actionListener="#{kanbanBean.setNewTaskStatus(kanbanBean.availableStatuses[0])}"
-                            oncomplete="PF('newTaskDialog').show()" update=":newTaskDialog" process="@this" />
-                    </div>
-                    <div id="todoTasksContainer" class="column-tasks">
-                        <ui:repeat id="todoRepeat" value="#{kanbanBean.todoTasks}" var="task" varStatus="loop">
-                            <h:panelGroup id="taskCard" layout="block" styleClass="task-card todo"
-                                pt:data-task-id="#{task.id}">
-                                <f:attribute name="taskId" value="#{task.id}" />
-                                <div class="task-title">#{task.title}</div>
-                                <div class="task-desc">
-                                    <h:outputText
-                                        value="#{empty task.description ? 'No description provided.' : (task.description.length() gt 70 ? task.description.substring(0,67).concat('...') : task.description)}" />
-                                </div>
-                                <div class="task-footer">
-                                    <div class="creator-info">
-                                        <span class="avatar">
-                                            #{task.createdBy != null ?
-                                            task.createdBy.username.substring(0,1).toUpperCase() : '?'}
-                                        </span>
-                                        <span>#{task.createdBy != null ? task.createdBy.username : ''}</span>
-                                    </div>
-                                    <span class="status-badge badge-todo">todo</span>
-                                    <p:commandButton icon="pi pi-eye" styleClass="ui-button-info ui-button-small"
-                                        actionListener="#{kanbanBean.viewTask(task)}"
-                                        oncomplete="PF('taskDetailDialog').show()" update=":taskDetailDialog"
-                                        process="@this" />
-                                </div>
-                            </h:panelGroup>
-
-                        </ui:repeat>
-                        <h:panelGroup layout="block" styleClass="empty-state" rendered="#{empty kanbanBean.todoTasks}">
-                            No tasks in TODO
-                        </h:panelGroup>
-                    </div>
-
-                </p:outputPanel>
+                <tf:taskColumn
+                    columnId="todoColumn"
+                    containerId="todoTasksContainer"
+                    headerClass="todo-header"
+                    headerLabel="לביצוע"
+                    badgeStyle="background:#90caf9; color:white; padding:2px 9px; border-radius:12px;"
+                    tasks="#{kanbanBean.todoTasks}"
+                    statusCss="todo"
+                    statusBadgeClass="badge-todo"
+                    statusBadgeText="לביצוע"
+                    statusIndex="0"
+                    plusBtnStyle="ui-button-success ui-button-small"
+                    emptyText="אין משימות לביצוע" />
 
                 <!-- IN PROGRESS COLUMN -->
-                <p:outputPanel id="inProgressColumn" layout="block" styleClass="kanban-column">
-                    <div class="kanban-column-header inprogress-header">
-                        <span>
-                            IN PROGRESS
-                            <span class="badge"
-                                style="background:#ffb74d; color:white; padding:2px 9px; border-radius:12px;">
-                                #{kanbanBean.inProgressTasks.size()}
-                            </span>
-                        </span>
-                        <p:commandButton value="+" icon="pi pi-plus" styleClass="ui-button-warning ui-button-small"
-                            actionListener="#{kanbanBean.setNewTaskStatus(kanbanBean.availableStatuses[1])}"
-                            oncomplete="PF('newTaskDialog').show()" update=":newTaskDialog" process="@this" />
-                    </div>
-                    <div id="inProgressTasksContainer" class="column-tasks">
-                        <ui:repeat id="inProgressRepeat" value="#{kanbanBean.inProgressTasks}" var="task"
-                            varStatus="loop">
-                            <h:panelGroup id="taskCard" layout="block" styleClass="task-card in-progress"
-                                pt:data-task-id="#{task.id}">
-                                <f:attribute name="taskId" value="#{task.id}" />
-                                <div class="task-title">#{task.title}</div>
-                                <div class="task-desc">
-                                    <h:outputText
-                                        value="#{empty task.description ? 'No description provided.' : (task.description.length() gt 70 ? task.description.substring(0,67).concat('...') : task.description)}" />
-                                </div>
-                                <div class="task-footer">
-                                    <div class="creator-info">
-                                        <span class="avatar">
-                                            #{task.createdBy != null ?
-                                            task.createdBy.username.substring(0,1).toUpperCase() : '?'}
-                                        </span>
-                                        <span>#{task.createdBy != null ? task.createdBy.username : ''}</span>
-                                    </div>
-                                    <span class="status-badge badge-in-progress">in progress</span>
-                                    <p:commandButton icon="pi pi-eye" styleClass="ui-button-info ui-button-small"
-                                        actionListener="#{kanbanBean.viewTask(task)}"
-                                        oncomplete="PF('taskDetailDialog').show()" update=":taskDetailDialog"
-                                        process="@this" />
-                                </div>
-                            </h:panelGroup>
-
-                        </ui:repeat>
-                        <h:panelGroup layout="block" styleClass="empty-state"
-                            rendered="#{empty kanbanBean.inProgressTasks}">
-                            No tasks in Progress
-                        </h:panelGroup>
-                    </div>
-
-                </p:outputPanel>
+                <tf:taskColumn
+                    columnId="inProgressColumn"
+                    containerId="inProgressTasksContainer"
+                    headerClass="inprogress-header"
+                    headerLabel="בתהליך"
+                    badgeStyle="background:#ffb74d; color:white; padding:2px 9px; border-radius:12px;"
+                    tasks="#{kanbanBean.inProgressTasks}"
+                    statusCss="in-progress"
+                    statusBadgeClass="badge-in-progress"
+                    statusBadgeText="בתהליך"
+                    statusIndex="1"
+                    plusBtnStyle="ui-button-warning ui-button-small"
+                    emptyText="אין משימות בתהליך" />
 
                 <!-- DONE COLUMN -->
-                <p:outputPanel id="doneColumn" layout="block" styleClass="kanban-column">
-                    <div class="kanban-column-header done-header">
-                        <span>
-                            DONE
-                            <span class="badge"
-                                style="background:#81c784; color:white; padding:2px 9px; border-radius:12px;">
-                                #{kanbanBean.doneTasks.size()}
-                            </span>
-                        </span>
-                        <p:commandButton value="+" icon="pi pi-plus" styleClass="ui-button-success ui-button-small"
-                            actionListener="#{kanbanBean.setNewTaskStatus(kanbanBean.availableStatuses[2])}"
-                            oncomplete="PF('newTaskDialog').show()" update=":newTaskDialog" process="@this" />
-                    </div>
-                    <div id="doneTasksContainer" class="column-tasks">
-                        <ui:repeat id="doneRepeat" value="#{kanbanBean.doneTasks}" var="task" varStatus="loop">
-                            <h:panelGroup id="taskCard" layout="block" styleClass="task-card done"
-                                pt:data-task-id="#{task.id}">
-                                <f:attribute name="taskId" value="#{task.id}" />
-                                <div class="task-title">#{task.title}</div>
-                                <div class="task-desc">
-                                    <h:outputText
-                                        value="#{empty task.description ? 'No description provided.' : (task.description.length() gt 70 ? task.description.substring(0,67).concat('...') : task.description)}" />
-                                </div>
-                                <div class="task-footer">
-                                    <div class="creator-info">
-                                        <span class="avatar">
-                                            #{task.createdBy != null ?
-                                            task.createdBy.username.substring(0,1).toUpperCase() : '?'}
-                                        </span>
-                                        <span>#{task.createdBy != null ? task.createdBy.username : ''}</span>
-                                    </div>
-                                    <span class="status-badge badge-done">done</span>
-                                    <p:commandButton icon="pi pi-eye" styleClass="ui-button-info ui-button-small"
-                                        actionListener="#{kanbanBean.viewTask(task)}"
-                                        oncomplete="PF('taskDetailDialog').show()" update=":taskDetailDialog"
-                                        process="@this" />
-                                </div>
-                            </h:panelGroup>
-
-                        </ui:repeat>
-                        <h:panelGroup layout="block" styleClass="empty-state" rendered="#{empty kanbanBean.doneTasks}">
-                            No tasks in Done
-                        </h:panelGroup>
-                    </div>
-
-                </p:outputPanel>
+                <tf:taskColumn
+                    columnId="doneColumn"
+                    containerId="doneTasksContainer"
+                    headerClass="done-header"
+                    headerLabel="הושלם"
+                    badgeStyle="background:#81c784; color:white; padding:2px 9px; border-radius:12px;"
+                    tasks="#{kanbanBean.doneTasks}"
+                    statusCss="done"
+                    statusBadgeClass="badge-done"
+                    statusBadgeText="הושלם"
+                    statusIndex="2"
+                    plusBtnStyle="ui-button-success ui-button-small"
+                    emptyText="אין משימות שהושלמו" />
 
             </h:panelGroup>
         </h:form>
 
         <!-- NEW TASK DIALOG -->
-        <p:dialog id="newTaskDialog" widgetVar="newTaskDialog" header="Create New Task" modal="true" draggable="true"
+        <p:dialog id="newTaskDialog" widgetVar="newTaskDialog" header="צור משימה חדשה" modal="true" draggable="true"
             resizable="false" width="480" style="border-radius:12px; box-shadow:0 10px 30px rgba(0,0,0,0.2);">
             <h:form id="newTaskForm">
                 <div style="padding: 5px 10px 15px 10px;">
-                    <p:outputLabel for="taskTitle" value="Task Title *" style="font-weight:700;" />
+                    <p:outputLabel for="taskTitle" value="כותרת משימה" style="font-weight:700;" />
                     <p:inputText id="taskTitle" value="#{kanbanBean.newTaskTitle}" required="true"
-                        style="width:100%; margin-top:6px;" placeholder="e.g., Fix registration process" />
+                        requiredMessage="כותרת המשימה היא שדה חובה"
+                        style="width:100%; margin-top:6px; direction:rtl; text-align:right;"
+                        placeholder="לדוגמה: תיקון תהליך ההרשמה" />
 
-                    <p:outputLabel for="taskDesc" value="Description"
+                    <p:outputLabel for="taskDesc" value="תיאור"
                         style="font-weight:700; margin-top:18px; display:block;" />
                     <p:inputTextarea id="taskDesc" value="#{kanbanBean.newTaskDescription}" rows="4"
-                        style="width:100%; margin-top:6px;" placeholder="Additional details..." />
+                        style="width:100%; margin-top:6px; direction:rtl; text-align:right;"
+                        placeholder="פרטים נוספים..." />
 
-                    <p:outputLabel for="taskStatus" value="Initial Status"
+                    <p:outputLabel for="taskStatus" value="סטטוס התחלתי"
                         style="font-weight:700; margin-top:18px; display:block;" />
-                    <p:selectOneMenu id="taskStatus" value="#{kanbanBean.newTaskStatus}"
-                        style="width:100%; margin-top:6px;">
-                        <f:selectItems value="#{kanbanBean.availableStatuses}" var="s" itemLabel="#{s}"
+                    <h:selectOneMenu id="taskStatus" value="#{kanbanBean.newTaskStatus}"
+                        styleClass="ui-inputfield ui-widget ui-state-default ui-corner-all"
+                        style="width:100%; margin-top:6px; padding: 6px 12px; direction: rtl; text-align: right; height: 34px; appearance: auto !important; -webkit-appearance: auto !important; -moz-appearance: auto !important;">
+                        <f:selectItems value="#{kanbanBean.availableStatuses}" var="s"
+                            itemLabel="#{s == 'TODO' ? 'לביצוע' : (s == 'IN_PROGRESS' ? 'בתהליך' : 'הושלם')}"
                             itemValue="#{s}" />
-                    </p:selectOneMenu>
+                    </h:selectOneMenu>
+
+                    <p:outputLabel for="newTaskAssignee" value="אחראי"
+                        style="font-weight:700; margin-top:18px; display:block;" />
+                    <h:selectOneMenu id="newTaskAssignee" value="#{kanbanBean.newTaskAssigneeId}"
+                        styleClass="ui-inputfield ui-widget ui-state-default ui-corner-all"
+                        style="width:100%; margin-top:6px; padding: 6px 12px; direction: rtl; text-align: right; height: 34px; appearance: auto !important; -webkit-appearance: auto !important; -moz-appearance: auto !important;">
+                        <f:selectItem itemLabel="לא משויך" itemValue="#{null}" />
+                        <f:selectItems value="#{kanbanBean.projectMembers}" var="user" itemLabel="#{user.username}" itemValue="#{user.id}" />
+                    </h:selectOneMenu>
+
+                    <p:outputLabel for="newTaskDueDate" value="תאריך יעד"
+                        style="font-weight:700; margin-top:18px; display:block;" />
+                    <p:datePicker id="newTaskDueDate" value="#{kanbanBean.newTaskDueDate}" showTime="true"
+                        pattern="dd/MM/yyyy HH:mm" style="width:100%; margin-top:6px;"
+                        mindate="#{kanbanBean.minDueDate}" />
                 </div>
                 <div style="text-align:right; padding-top:10px; border-top:1px solid #e0e0e0;">
-                    <p:commandButton value="Cancel" icon="pi pi-times" styleClass="ui-button-secondary"
-                        onclick="PF('newTaskDialog').hide()" type="button" />
-                    <p:commandButton value="Create Task" icon="pi pi-check" styleClass="ui-button-success"
+                    <p:commandButton value="ביטול" icon="pi pi-times" styleClass="ui-button-secondary"
+                        onclick="PF('newTaskDialog').hide()" type="button" style="margin-left: 10px;" />
+                    <p:commandButton value="צור משימה" icon="pi pi-check" styleClass="ui-button-success"
                         action="#{kanbanBean.createNewTask}"
                         update="@form :kanbanForm:boardContainer :kanbanForm:globalMessages"
                         oncomplete="if (!args.validationFailed) { PF('newTaskDialog').hide(); initKanbanDND(); }" />
@@ -333,8 +399,8 @@
         </p:dialog>
 
         <!-- TASK DETAIL DIALOG -->
-        <p:dialog id="taskDetailDialog" widgetVar="taskDetailDialog" header="Task Details" modal="true" width="700" height="500" fitViewport="true"
-            style="border-radius:12px; box-shadow:0 10px 30px rgba(0,0,0,0.2);">
+        <p:dialog id="taskDetailDialog" widgetVar="taskDetailDialog" header="פרטי משימה" modal="true" width="700"
+            height="500" fitViewport="true" style="border-radius:12px; box-shadow:0 10px 30px rgba(0,0,0,0.2);">
             <h:form id="taskDetailForm">
                 <h:panelGroup id="taskDetailPanel">
                     <ui:fragment rendered="#{kanbanBean.selectedTask != null}">
@@ -343,67 +409,84 @@
                                 #{kanbanBean.selectedTask.title}
                             </h3>
 
-                            <p:outputLabel for="taskDesc" value="Description" style="font-weight:700; color:#5e6c84; display:block; margin-bottom:5px;" />
-                            <p:inputTextarea id="taskDesc" value="#{kanbanBean.selectedTask.description}" rows="4" style="width:100%; margin-bottom:15px;" placeholder="Add a more detailed description..." />
+                            <p:outputLabel for="taskDesc" value="תיאור"
+                                style="font-weight:700; color:#5e6c84; display:block; margin-bottom:5px;" />
+                            <p:inputTextarea id="taskDesc" value="#{kanbanBean.selectedTask.description}" rows="4"
+                                style="width:100%; margin-bottom:15px;" placeholder="הוסף תיאור מפורט יותר..." />
 
                             <div style="display:flex; gap:15px; margin-bottom:15px;">
                                 <div style="flex:1;">
-                                    <p:outputLabel for="taskAssignee" value="Assignee" style="font-weight:700; color:#5e6c84; display:block; margin-bottom:5px;" />
-                                    <p:selectOneMenu id="taskAssignee" value="#{kanbanBean.selectedAssigneeId}" style="width:100%;">
-                                        <f:selectItem itemLabel="Unassigned" itemValue="#{null}" />
-                                        <f:selectItems value="#{kanbanBean.projectMembers}" var="user" itemLabel="#{user.username}" itemValue="#{user.id}" />
+                                    <p:outputLabel for="taskAssignee" value="אחראי"
+                                        style="font-weight:700; color:#5e6c84; display:block; margin-bottom:5px;" />
+                                    <p:selectOneMenu id="taskAssignee" value="#{kanbanBean.selectedAssigneeId}"
+                                        style="width:100%;">
+                                        <f:selectItem itemLabel="לא משויך" itemValue="#{null}" />
+                                        <f:selectItems value="#{kanbanBean.projectMembers}" var="user"
+                                            itemLabel="#{user.username}" itemValue="#{user.id}" />
                                     </p:selectOneMenu>
                                 </div>
                                 <div style="flex:1;">
-                                    <p:outputLabel for="taskDueDate" value="Due Date" style="font-weight:700; color:#5e6c84; display:block; margin-bottom:5px;" />
-                                    <p:datePicker id="taskDueDate" value="#{kanbanBean.selectedTask.dueDate}" showTime="true" pattern="dd/MM/yyyy HH:mm" style="width:100%;" />
+                                    <p:outputLabel for="taskDueDate" value="תאריך יעד"
+                                        style="font-weight:700; color:#5e6c84; display:block; margin-bottom:5px;" />
+                                    <p:datePicker id="taskDueDate" value="#{kanbanBean.selectedTask.dueDate}"
+                                        showTime="true" pattern="dd/MM/yyyy HH:mm" style="width:100%;"
+                                        mindate="#{kanbanBean.minDueDate}" />
                                 </div>
                             </div>
 
-                            <div style="margin-top:15px; font-size:0.9em; color:#7a869a; display:flex; flex-direction:column; gap:6px; background:#f8f9fa; padding:12px; border-radius:8px;">
+                            <div
+                                style="margin-top:15px; font-size:0.9em; color:#7a869a; display:flex; flex-direction:column; gap:6px; background:#f8f9fa; padding:12px; border-radius:8px;">
                                 <div>
-                                    <strong>Status:</strong>
-                                    <span class="status-badge #{kanbanBean.selectedTask.status == 'TODO' ? 'badge-todo' : (kanbanBean.selectedTask.status == 'IN_PROGRESS' ? 'badge-in-progress' : 'badge-done')}">
-                                        #{kanbanBean.selectedTask.status}
+                                    <strong>סטטוס:</strong>
+                                    <span
+                                        class="status-badge #{kanbanBean.selectedTask.status == 'TODO' ? 'badge-todo' : (kanbanBean.selectedTask.status == 'IN_PROGRESS' ? 'badge-in-progress' : 'badge-done')}">
+                                        #{kanbanBean.selectedTask.status == 'TODO' ? 'לביצוע' :
+                                        (kanbanBean.selectedTask.status == 'IN_PROGRESS' ? 'בתהליך' : 'הושלם')}
                                     </span>
                                 </div>
-                                <div><strong>Created by:</strong> #{kanbanBean.selectedTask.createdBy != null ? kanbanBean.selectedTask.createdBy.username : 'Unknown'}</div>
+                                <div><strong>נוצר ע"י:</strong> #{kanbanBean.selectedTask.createdBy != null ?
+                                    kanbanBean.selectedTask.createdBy.username : 'Unknown'}</div>
                                 <div>
-                                    <strong>Created:</strong>
+                                    <strong>תאריך יצירה:</strong>
                                     <h:outputText value="#{kanbanBean.selectedTask.createdAt}">
                                         <f:convertDateTime type="localDateTime" pattern="dd/MM/yyyy HH:mm" />
                                     </h:outputText>
                                 </div>
                             </div>
 
-                            <div style="margin-top:25px; text-align:right; border-top:1px solid #eee; padding-top:15px;">
-                                <p:commandButton value="Save Changes" action="#{kanbanBean.updateTask}"
+                            <div
+                                style="margin-top:25px; text-align:right; border-top:1px solid #eee; padding-top:15px;">
+                                <p:commandButton value="שמור שינויים" action="#{kanbanBean.updateTask}"
                                     update=":kanbanForm:boardContainer :kanbanForm:globalMessages"
                                     oncomplete="if (!args.validationFailed) { PF('taskDetailDialog').hide(); initKanbanDND(); }"
                                     icon="pi pi-save" styleClass="ui-button-success" style="margin-right:8px;" />
-                                <p:commandButton value="Close" onclick="PF('taskDetailDialog').hide()" type="button"
+                                <p:commandButton value="סגור" onclick="PF('taskDetailDialog').hide()" type="button"
                                     styleClass="ui-button-secondary" />
                             </div>
 
                             <!-- Comments Section -->
                             <div style="margin-top:30px; border-top:1px solid #eee; padding-top:20px;">
-                                <h4 style="margin-top:0; color:#172b4d;">Comments</h4>
-                                
+                                <h4 style="margin-top:0; color:#172b4d;">תגובות</h4>
+
                                 <div style="display:flex; gap:10px; margin-bottom:15px; align-items:flex-start;">
-                                    <p:inputTextarea id="newCommentArea" value="#{kanbanBean.newCommentText}" rows="2" style="flex:1;" placeholder="Write a comment..." />
-                                    <p:commandButton value="Add" action="#{kanbanBean.addComment}" update="@form :kanbanForm:globalMessages" icon="pi pi-send" styleClass="ui-button-primary" style="height: fit-content;" />
+                                    <p:inputTextarea id="newCommentArea" value="#{kanbanBean.newCommentText}" rows="2"
+                                        style="flex:1;" placeholder="כתוב תגובה..." />
+                                    <p:commandButton value="הוסף" action="#{kanbanBean.addComment}"
+                                        update="@form :kanbanForm:globalMessages" icon="pi pi-send"
+                                        styleClass="ui-button-primary" style="height: fit-content;" />
                                 </div>
 
-                                <p:dataTable id="commentsTable" value="#{kanbanBean.selectedTaskComments}" var="comment" emptyMessage="No comments yet." styleClass="ui-datatable-striped">
-                                    <p:column headerText="User" style="width:120px;">
+                                <p:dataTable id="commentsTable" value="#{kanbanBean.selectedTaskComments}" var="comment"
+                                    emptyMessage="אין תגובות עדיין." styleClass="ui-datatable-striped">
+                                    <p:column headerText="משתמש" style="width:120px;">
                                         <h:outputText value="#{comment.user.username}" style="font-weight:bold;" />
                                     </p:column>
-                                    <p:column headerText="Date" style="width:140px; color:#7a869a; font-size:0.9em;">
+                                    <p:column headerText="תאריך" style="width:140px; color:#7a869a; font-size:0.9em;">
                                         <h:outputText value="#{comment.createdAt}">
                                             <f:convertDateTime type="localDateTime" pattern="dd/MM/yyyy HH:mm" />
                                         </h:outputText>
                                     </p:column>
-                                    <p:column headerText="Comment">
+                                    <p:column headerText="תגובה">
                                         <h:outputText value="#{comment.content}" style="white-space:pre-wrap;" />
                                     </p:column>
                                 </p:dataTable>

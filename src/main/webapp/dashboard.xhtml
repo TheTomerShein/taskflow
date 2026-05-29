@@ -8,18 +8,10 @@
       xmlns:ui="http://xmlns.jcp.org/jsf/facelets" dir="rtl">
 
 <h:head>
-    <title>TaskFlow - Dashboard</title>
+    <title>TaskFlow - דשבורד</title>
     <link href="https://fonts.googleapis.com/css2?family=Inter:wght@400;600;700;800&amp;display=swap" rel="stylesheet" />
+    <h:outputStylesheet library="css" name="common.css" />
     <style type="text/css">
-        * { margin: 0; padding: 0; box-sizing: border-box; }
-
-        body {
-            font-family: 'Inter', sans-serif;
-            background: #f5f5f7;
-            min-height: 100vh;
-            direction: rtl;
-        }
-
         .dashboard-container {
             max-width: 960px;
             margin: 0 auto;
@@ -37,11 +29,6 @@
             justify-content: space-between;
             align-items: center;
             animation: fadeIn 0.4s ease-out;
-        }
-
-        @keyframes fadeIn {
-            from { opacity: 0; transform: translateY(12px); }
-            to { opacity: 1; transform: translateY(0); }
         }
 
         .dash-header h1 {
@@ -72,21 +59,40 @@
             background: #fdecea !important;
         }
 
-        /* ===== Section Titles ===== */
+        /* ===== Section Title override ===== */
         .section-title {
-            font-size: 1.15em;
-            font-weight: 700;
-            color: #1a1a2e;
-            margin-bottom: 16px;
             padding-right: 4px;
         }
 
         /* ===== Project Cards ===== */
+        .projects-scroll-container {
+            max-height: 380px;
+            overflow-y: auto;
+            padding: 10px 8px;
+            margin-bottom: 24px;
+            border-radius: 16px;
+        }
+
+        /* Custom scrollbar */
+        .projects-scroll-container::-webkit-scrollbar {
+            width: 8px;
+        }
+        .projects-scroll-container::-webkit-scrollbar-track {
+            background: #f1f1f1;
+            border-radius: 10px;
+        }
+        .projects-scroll-container::-webkit-scrollbar-thumb {
+            background: #d4b8e8;
+            border-radius: 10px;
+        }
+        .projects-scroll-container::-webkit-scrollbar-thumb:hover {
+            background: #9b59b6;
+        }
+
         .projects-grid {
             display: grid;
             grid-template-columns: repeat(auto-fill, minmax(280px, 1fr));
             gap: 16px;
-            margin-bottom: 32px;
         }
 
         .project-card {
@@ -144,24 +150,6 @@
             color: #bbb;
         }
 
-        /* ===== Empty State ===== */
-        .empty-state {
-            text-align: center;
-            padding: 50px 20px;
-            color: #bbb;
-        }
-
-        .empty-state i {
-            font-size: 3em;
-            color: #e0d5f0;
-            margin-bottom: 12px;
-        }
-
-        .empty-state h3 {
-            color: #999;
-            font-weight: 600;
-        }
-
         /* ===== Create Project Card ===== */
         .create-card {
             background: #ffffff;
@@ -169,47 +157,6 @@
             box-shadow: 0 4px 24px rgba(0, 0, 0, 0.06);
             padding: 28px 36px;
             animation: fadeIn 0.4s ease-out 0.1s both;
-        }
-
-        .form-group {
-            margin-bottom: 16px;
-        }
-
-        .form-group label {
-            display: block;
-            font-size: 0.88em;
-            font-weight: 600;
-            color: #555;
-            margin-bottom: 6px;
-            text-align: right;
-        }
-
-        .form-group .ui-inputfield,
-        .form-group input[type="text"],
-        .form-group textarea {
-            width: 100% !important;
-            padding: 14px 18px !important;
-            border: 1.5px solid #e8e8ec !important;
-            border-radius: 50px !important;
-            background: #fafafc !important;
-            font-size: 0.95em !important;
-            font-family: 'Inter', sans-serif !important;
-            color: #333 !important;
-            outline: none !important;
-            transition: border-color 0.2s ease, box-shadow 0.2s ease !important;
-        }
-
-        .form-group textarea,
-        .form-group .ui-inputtextarea {
-            border-radius: 16px !important;
-        }
-
-        .form-group .ui-inputfield:focus,
-        .form-group input[type="text"]:focus,
-        .form-group textarea:focus {
-            border-color: #9b59b6 !important;
-            box-shadow: 0 0 0 3px rgba(155, 89, 182, 0.12) !important;
-            background: #fff !important;
         }
 
         .create-btn {
@@ -229,21 +176,6 @@
             transform: translateY(-1px) !important;
             box-shadow: 0 6px 20px rgba(155, 89, 182, 0.35) !important;
         }
-
-        /* ===== Messages ===== */
-        .ui-messages-error {
-            background: #fff0f0 !important;
-            border: 1px solid #ffcccc !important;
-            border-radius: 12px !important;
-            padding: 10px 16px !important;
-        }
-
-        .ui-messages-info {
-            background: #f0fff4 !important;
-            border: 1px solid #c6f6d5 !important;
-            border-radius: 12px !important;
-            padding: 10px 16px !important;
-        }
     </style>
 </h:head>
 
@@ -262,7 +194,7 @@
                     styleClass="logout-btn" />
             </div>
 
-            <p:growl id="messages" showDetail="true" life="3000" />
+            <p:growl id="messages" showDetail="true" showSummary="false" life="3000" />
 
             <!-- Projects Section -->
             <div class="section-title">
@@ -271,25 +203,27 @@
             </div>
 
             <h:panelGroup rendered="#{not empty dashboardBean.projects}" layout="block">
-                <div class="projects-grid">
-                    <ui:repeat value="#{dashboardBean.projects}" var="project">
-                        <h:link outcome="project" styleClass="project-card">
-                            <f:param name="projectId" value="#{project.id}" />
-                            <div class="project-icon">
-                                <i class="pi pi-folder"></i>
-                            </div>
-                            <div class="project-name">#{project.name}</div>
-                            <div class="project-desc">
-                                #{empty project.description ? 'ללא תיאור' : project.description}
-                            </div>
-                            <div class="project-date">
-                                נוצר:
-                                <h:outputText value="#{project.createdAt}">
-                                    <f:convertDateTime type="localDateTime" pattern="dd/MM/yyyy" />
-                                </h:outputText>
-                            </div>
-                        </h:link>
-                    </ui:repeat>
+                <div class="projects-scroll-container">
+                    <div class="projects-grid">
+                        <ui:repeat value="#{dashboardBean.projects}" var="project">
+                            <h:link outcome="project" styleClass="project-card">
+                                <f:param name="projectId" value="#{project.id}" />
+                                <div class="project-icon">
+                                    <i class="pi pi-folder"></i>
+                                </div>
+                                <div class="project-name">#{project.name}</div>
+                                <div class="project-desc">
+                                    #{empty project.description ? 'ללא תיאור' : project.description}
+                                </div>
+                                <div class="project-date">
+                                    נוצר:
+                                    <h:outputText value="#{project.createdAt}">
+                                        <f:convertDateTime type="localDateTime" pattern="dd/MM/yyyy" />
+                                    </h:outputText>
+                                </div>
+                            </h:link>
+                        </ui:repeat>
+                    </div>
                 </div>
             </h:panelGroup>
 

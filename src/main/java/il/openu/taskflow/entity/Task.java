@@ -2,6 +2,7 @@ package il.openu.taskflow.entity;
 
 import jakarta.persistence.*;
 import java.time.LocalDateTime;
+import jakarta.json.bind.annotation.JsonbTransient;
 
 @Entity
 @Table(name = "tasks")
@@ -30,6 +31,7 @@ public class Task {
 
     @ManyToOne
     @JoinColumn(name = "board_id", nullable = false)
+    @JsonbTransient
     private Board board;
 
     @ManyToOne

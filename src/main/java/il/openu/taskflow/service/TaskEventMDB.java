@@ -19,6 +19,11 @@ import jakarta.jms.TextMessage;
 import jakarta.json.Json;
 import jakarta.json.JsonObject;
 import jakarta.json.JsonReader;
+import jakarta.ws.rs.client.Client;
+import jakarta.ws.rs.client.ClientBuilder;
+import jakarta.ws.rs.client.Entity;
+import jakarta.ws.rs.core.MediaType;
+import jakarta.ws.rs.core.Response;
 
 import java.io.StringReader;
 
@@ -132,6 +137,11 @@ public class TaskEventMDB implements MessageListener {
             activityLogRepository.save(log);
             System.out.println("[MDB] ActivityLog saved successfully: " + actionType);
 
+            // Call external Web Service (JSONPlaceholder) asynchronously when a task status changes
+            if ("STATUS_CHANGED".equals(eventType)) {
+                callExternalWebService(taskId, details);
+            }
+
         } catch (Exception e) {
             System.err.println("[MDB] ERROR processing message: " + e.getMessage());
             e.printStackTrace();
@@ -139,6 +149,32 @@ public class TaskEventMDB implements MessageListener {
             // Throw RuntimeException so the container can redeliver the message.
             // Configure redelivery limits + DLQ in Payara for production safety.
             throw new RuntimeException("Failed to process event message", e);
+        }
+    }
+
+    /**
+     * Calls an external Web Service (jsonplaceholder) to post the task event details.
+     */
+    private void callExternalWebService(Long taskId, String details) {
+        try (Client client = ClientBuilder.newClient()) {
+            JsonObject payload = Json.createObjectBuilder()
+                    .add("taskId", taskId != null ? taskId : 0)
+                    .add("details", details != null ? details : "")
+                    .add("timestamp", java.time.LocalDateTime.now().toString())
+                    .build();
+
+            Response response = client.target("https://jsonplaceholder.typicode.com/posts")
+                    .request(MediaType.APPLICATION_JSON)
+                    .post(Entity.json(payload.toString()));
+
+            System.out.println("[MDB] External Web Service Response Status: " + response.getStatus());
+            if (response.getStatus() == 200 || response.getStatus() == 201) {
+                String responseBody = response.readEntity(String.class);
+                System.out.println("[MDB] External Web Service Response Body: " + responseBody);
+            }
+        } catch (Exception e) {
+            System.err.println("[MDB] External Web Service Call failed: " + e.getMessage());
+            e.printStackTrace();
         }
     }
 

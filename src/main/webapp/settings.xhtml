@@ -12,16 +12,8 @@
 <h:head>
     <title>הגדרות - #{settingsBean.currentProject != null ? settingsBean.currentProject.name : 'Project'}</title>
     <link href="https://fonts.googleapis.com/css2?family=Inter:wght@400;600;700;800&amp;display=swap" rel="stylesheet" />
+    <h:outputStylesheet library="css" name="common.css" />
     <style type="text/css">
-        * { margin: 0; padding: 0; box-sizing: border-box; }
-
-        body {
-            font-family: 'Inter', sans-serif;
-            background: #f5f5f7;
-            min-height: 100vh;
-            direction: rtl;
-        }
-
         .settings-container {
             max-width: 780px;
             margin: 0 auto;
@@ -39,11 +31,6 @@
             justify-content: space-between;
             align-items: center;
             animation: fadeIn 0.4s ease-out;
-        }
-
-        @keyframes fadeIn {
-            from { opacity: 0; transform: translateY(12px); }
-            to { opacity: 1; transform: translateY(0); }
         }
 
         .settings-header h1 {
@@ -75,8 +62,6 @@
 
         .section-title {
             font-size: 1.1em;
-            font-weight: 700;
-            color: #1a1a2e;
             margin-bottom: 20px;
             padding-bottom: 12px;
             border-bottom: 2px solid #f5f5f7;
@@ -87,76 +72,7 @@
             color: #9b59b6;
         }
 
-        /* ===== Form ===== */
-        .form-group {
-            margin-bottom: 16px;
-        }
-
-        .form-group label {
-            display: block;
-            font-size: 0.88em;
-            font-weight: 600;
-            color: #555;
-            margin-bottom: 6px;
-        }
-
-        .form-group .ui-inputfield,
-        .form-group input[type="text"],
-        .form-group textarea {
-            width: 100% !important;
-            padding: 14px 18px !important;
-            border: 1.5px solid #e8e8ec !important;
-            border-radius: 50px !important;
-            background: #fafafc !important;
-            font-size: 0.95em !important;
-            font-family: 'Inter', sans-serif !important;
-            color: #333 !important;
-            outline: none !important;
-            transition: border-color 0.2s ease, box-shadow 0.2s ease !important;
-        }
-
-        .form-group textarea,
-        .form-group .ui-inputtextarea {
-            border-radius: 16px !important;
-        }
-
-        .form-group .ui-inputfield:focus {
-            border-color: #9b59b6 !important;
-            box-shadow: 0 0 0 3px rgba(155, 89, 182, 0.12) !important;
-            background: #fff !important;
-        }
-
-        /* ===== Buttons ===== */
-        .btn-pill {
-            padding: 10px 24px !important;
-            border: none !important;
-            border-radius: 50px !important;
-            font-weight: 600 !important;
-            font-family: 'Inter', sans-serif !important;
-            font-size: 0.88em !important;
-            cursor: pointer !important;
-            transition: all 0.2s ease !important;
-        }
-
-        .btn-purple {
-            background: linear-gradient(135deg, #9b59b6 0%, #8e44ad 100%) !important;
-            color: #fff !important;
-        }
-
-        .btn-purple:hover {
-            transform: translateY(-1px) !important;
-            box-shadow: 0 4px 16px rgba(155, 89, 182, 0.3) !important;
-        }
-
-        .btn-ghost {
-            background: #f5f5f7 !important;
-            color: #555 !important;
-        }
-
-        .btn-ghost:hover {
-            background: #ececee !important;
-        }
-
+        /* ===== Small Buttons ===== */
         .btn-danger-sm {
             padding: 6px 14px !important;
             border: none !important;
@@ -269,6 +185,27 @@
             box-shadow: 0 0 0 3px rgba(155, 89, 182, 0.12) !important;
         }
 
+        /* Support for Multiple Autocomplete Chips */
+        .add-member-row .ui-autocomplete-multiple-container {
+            width: 100% !important;
+            padding: 6px 12px !important;
+            border: 1.5px solid #e8e8ec !important;
+            border-radius: 20px !important;
+            background: #fafafc !important;
+            font-family: 'Inter', sans-serif !important;
+            min-height: 46px;
+        }
+
+        .add-member-row .ui-autocomplete-multiple-container.ui-state-focus {
+            border-color: #9b59b6 !important;
+            box-shadow: 0 0 0 3px rgba(155, 89, 182, 0.12) !important;
+            background: #fff !important;
+        }
+
+        .add-member-row .ui-autocomplete-multiple-container .ui-autocomplete-input-token input {
+            min-width: 280px !important;
+        }
+
         /* ===== Access Denied ===== */
         .access-denied {
             text-align: center;
@@ -308,7 +245,7 @@
                 </p:button>
             </div>
 
-            <p:growl id="messages" showDetail="true" life="3000" />
+            <p:growl id="messages" showDetail="true" showSummary="false" life="3000" />
 
             <h:panelGroup rendered="#{settingsBean.currentProject != null}" layout="block">
 
@@ -344,12 +281,13 @@
                     <!-- Add Member -->
                     <div class="add-member-row">
                         <div style="flex: 1;">
-                            <p:autoComplete id="userSearch" value="#{settingsBean.selectedUser}"
+                            <p:autoComplete id="userSearch" value="#{settingsBean.selectedUsers}"
                                 completeMethod="#{settingsBean.searchUsers}"
                                 var="u" itemLabel="#{u.username} (#{u.email})" itemValue="#{u}"
                                 converter="#{userConverter}"
                                 placeholder="חפש לפי שם משתמש או אימייל..."
-                                minQueryLength="1" />
+                                minQueryLength="1"
+                                multiple="true" />
                         </div>
                         <p:commandButton value="הוסף" icon="pi pi-user-plus" styleClass="btn-success-sm"
                             action="#{settingsBean.addMember}" update="settingsForm" />

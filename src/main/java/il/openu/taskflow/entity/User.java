@@ -1,6 +1,7 @@
 package il.openu.taskflow.entity;
 
 import jakarta.persistence.*;
+import jakarta.json.bind.annotation.JsonbTransient;
 import java.util.HashSet;
 import java.util.Set;
 
@@ -17,6 +18,7 @@ public class User {
     private String username;
 
     @Column(nullable = false)
+    @JsonbTransient
     private String password;
 
     // email must be unique
@@ -25,6 +27,7 @@ public class User {
 
     // all projects this user is member of
     @ManyToMany(mappedBy = "members")
+    @JsonbTransient
     private Set<Project> projects = new HashSet<>();
 
     public User() {}

@@ -20,7 +20,7 @@ public class BoardRepository extends AbstractRepository<Board> {
      * @return list of boards
      */
     public List<Board> findByProjectId(Long projectId) {
-        return em.createQuery("SELECT b FROM Board b WHERE b.project.id = :projectId", Board.class)
+        return em.createQuery("SELECT b FROM Board b WHERE b.project.id = :projectId ORDER BY b.createdAt DESC", Board.class)
                 .setParameter("projectId", projectId)
                 .getResultList();
     }

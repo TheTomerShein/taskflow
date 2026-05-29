@@ -47,7 +47,7 @@ public class ProjectService {
                 null,
                 null,
                 owner.getId(),
-                "Project created: " + name
+                "פרויקט נוצר: " + name
         );
 
         return savedProject;
@@ -61,29 +61,25 @@ public class ProjectService {
      * @return true if added successfully
      */
     public boolean addMember(Long projectId, Long userId, User addedBy) {
-        Project project = projectRepository.findById(projectId).orElse(null);
-        User user = userRepository.findById(userId).orElse(null);
-
-        if (project == null || user == null) {
-            return false;
-        }
+        ProjectAndUser pu = fetchProjectAndUser(projectId, userId);
+        if (pu == null) return false;
 
         // Avoid duplicates
-        if (project.getMembers().contains(user)) {
+        if (pu.project().getMembers().contains(pu.user())) {
             return false;
         }
 
-        project.getMembers().add(user);
-        projectRepository.update(project);
+        pu.project().getMembers().add(pu.user());
+        projectRepository.update(pu.project());
 
         // Send async JMS event
         jmsProducer.sendEvent(
                 "MEMBER_ADDED",
-                project.getId(),
+                pu.project().getId(),
                 null,
                 null,
                 addedBy.getId(),
-                "Member added: " + user.getUsername()
+                "חבר נוסף: " + pu.user().getUsername()
         );
 
         return true;
@@ -113,33 +109,29 @@ public class ProjectService {
      * @return true if removed successfully
      */
     public boolean removeMember(Long projectId, Long userId, User removedBy) {
-        Project project = projectRepository.findById(projectId).orElse(null);
-        User user = userRepository.findById(userId).orElse(null);
-
-        if (project == null || user == null) {
-            return false;
-        }
+        ProjectAndUser pu = fetchProjectAndUser(projectId, userId);
+        if (pu == null) return false;
 
         // Cannot remove the owner
-        if (project.getOwner().getId().equals(userId)) {
+        if (pu.project().isOwner(pu.user())) {
             return false;
         }
 
-        if (!project.getMembers().contains(user)) {
+        if (!pu.project().getMembers().contains(pu.user())) {
             return false;
         }
 
-        project.getMembers().remove(user);
-        projectRepository.update(project);
+        pu.project().getMembers().remove(pu.user());
+        projectRepository.update(pu.project());
 
         // Send async JMS event
         jmsProducer.sendEvent(
                 "MEMBER_REMOVED",
-                project.getId(),
+                pu.project().getId(),
                 null,
                 null,
                 removedBy.getId(),
-                "Member removed: " + user.getUsername()
+                "חבר הוסר: " + pu.user().getUsername()
         );
 
         return true;
@@ -161,7 +153,7 @@ public class ProjectService {
                 null,
                 null,
                 user.getId(),
-                "Project updated: " + project.getName()
+                "פרויקט עודכן: " + project.getName()
         );
 
         return updated;
@@ -175,7 +167,39 @@ public class ProjectService {
      */
     public boolean isOwner(Long projectId, Long userId) {
         return projectRepository.findById(projectId)
-                .map(project -> project.getOwner().getId().equals(userId))
+                .map(project -> project.isOwner(
+                        userRepository.findById(userId).orElse(null)))
                 .orElse(false);
+    }
+
+    // ==================== Private Helpers ====================
+
+    /**
+     * Lightweight holder for a fetched Project and User pair.
+     */
+    private static class ProjectAndUser {
+        private final Project project;
+        private final User user;
+
+        ProjectAndUser(Project project, User user) {
+            this.project = project;
+            this.user = user;
+        }
+
+        Project project() { return project; }
+        User user() { return user; }
+    }
+
+    /**
+     * Fetches a Project and User by their IDs.
+     * Returns null if either entity is not found.
+     */
+    private ProjectAndUser fetchProjectAndUser(Long projectId, Long userId) {
+        Project project = projectRepository.findById(projectId).orElse(null);
+        User user = userRepository.findById(userId).orElse(null);
+        if (project == null || user == null) {
+            return null;
+        }
+        return new ProjectAndUser(project, user);
     }
 }

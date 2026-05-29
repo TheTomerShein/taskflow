@@ -4,13 +4,12 @@ import il.openu.taskflow.entity.Project;
 import il.openu.taskflow.entity.User;
 import il.openu.taskflow.repository.UserRepository;
 import il.openu.taskflow.service.ProjectService;
-import jakarta.faces.application.FacesMessage;
-import jakarta.faces.context.FacesContext;
+
 import jakarta.faces.view.ViewScoped;
 import jakarta.inject.Inject;
 import jakarta.inject.Named;
 
-import java.io.Serializable;
+
 import java.util.ArrayList;
 import java.util.List;
 import java.util.stream.Collectors;
@@ -22,9 +21,7 @@ import java.util.stream.Collectors;
  */
 @Named
 @ViewScoped
-public class SettingsBean implements Serializable {
-
-    private static final long serialVersionUID = 1L;
+public class SettingsBean extends BaseBean {
 
     @Inject
     private ProjectService projectService;
@@ -32,15 +29,14 @@ public class SettingsBean implements Serializable {
     @Inject
     private UserRepository userRepository;
 
-    @Inject
-    private AuthBean authBean;
+
 
     private Long projectId;
     private Project currentProject;
     private List<User> members;
 
     // For adding members
-    private User selectedUser;
+    private List<User> selectedUsers = new ArrayList<>();
 
     /**
      * Called by f:viewParam. Loads the project and verifies ownership.
@@ -63,21 +59,19 @@ public class SettingsBean implements Serializable {
         currentProject = projectService.findById(projectId).orElse(null);
 
         if (currentProject == null) {
-            FacesContext.getCurrentInstance().addMessage(null,
-                    new FacesMessage(FacesMessage.SEVERITY_ERROR, "Error", "Project not found"));
+            addErrorMessage("שגיאה", "הפרויקט לא נמצא");
             return;
         }
 
         // Security: only owner can access settings
-        User currentUser = authBean.getCurrentUser();
-        if (currentUser == null || !currentProject.getOwner().getId().equals(currentUser.getId())) {
-            FacesContext.getCurrentInstance().addMessage(null,
-                    new FacesMessage(FacesMessage.SEVERITY_ERROR, "Error", "Only the project owner can access settings"));
+        User currentUser = getAuthBean().getCurrentUser();
+        if (currentUser == null || !currentProject.isOwner(currentUser)) {
+            addErrorMessage("שגיאה", "רק בעל הפרויקט יכול לגשת להגדרות");
             currentProject = null;
             return;
         }
 
-        members = new ArrayList<>(currentProject.getMembers());
+        reloadMembers();
     }
 
     /**
@@ -104,28 +98,37 @@ public class SettingsBean implements Serializable {
     }
 
     /**
-     * Adds the selected user as a member to the project.
+     * Adds the selected users as members to the project.
      */
     public void addMember() {
-        if (selectedUser == null || currentProject == null) {
-            FacesContext.getCurrentInstance().addMessage(null,
-                    new FacesMessage(FacesMessage.SEVERITY_WARN, "Warning", "Please select a user first"));
+        if (selectedUsers == null || selectedUsers.isEmpty() || currentProject == null) {
+            addWarnMessage("אזהרה", "אנא בחר לפחות משתמש אחד תחילה");
             return;
         }
 
-        boolean success = projectService.addMember(projectId, selectedUser.getId(), authBean.getCurrentUser());
+        int addedCount = 0;
+        List<String> skippedUsernames = new ArrayList<>();
 
-        if (success) {
-            FacesContext.getCurrentInstance().addMessage(null,
-                    new FacesMessage(FacesMessage.SEVERITY_INFO, "Success",
-                            "Member '" + selectedUser.getUsername() + "' added successfully"));
-            selectedUser = null;
+        for (User user : selectedUsers) {
+            boolean success = projectService.addMember(projectId, user.getId(), getAuthBean().getCurrentUser());
+            if (success) {
+                addedCount++;
+            } else {
+                skippedUsernames.add(user.getUsername());
+            }
+        }
+
+        if (addedCount > 0) {
+            if (skippedUsernames.isEmpty()) {
+                addInfoMessage("הצלחה", "נוספו " + addedCount + " חברי צוות בהצלחה");
+            } else {
+                addInfoMessage("הצלחה", "נוספו " + addedCount + " חברי צוות. לא ניתן להוסיף את: " + String.join(", ", skippedUsernames));
+            }
+            selectedUsers.clear();
             // Reload project to refresh members list
-            currentProject = projectService.findById(projectId).orElse(null);
-            members = new ArrayList<>(currentProject.getMembers());
+            reloadMembers();
         } else {
-            FacesContext.getCurrentInstance().addMessage(null,
-                    new FacesMessage(FacesMessage.SEVERITY_WARN, "Warning", "User is already a member or not found"));
+            addWarnMessage("אזהרה", "המשתמשים שבחרת כבר חברים בפרויקט או שלא נמצאו");
         }
     }
 
@@ -135,17 +138,14 @@ public class SettingsBean implements Serializable {
     public void removeMember(Long userId) {
         if (currentProject == null) return;
 
-        boolean success = projectService.removeMember(projectId, userId, authBean.getCurrentUser());
+        boolean success = projectService.removeMember(projectId, userId, getAuthBean().getCurrentUser());
 
         if (success) {
-            FacesContext.getCurrentInstance().addMessage(null,
-                    new FacesMessage(FacesMessage.SEVERITY_INFO, "Success", "Member removed successfully"));
+            addInfoMessage("הצלחה", "חבר הצוות הוסר בהצלחה");
             // Reload
-            currentProject = projectService.findById(projectId).orElse(null);
-            members = new ArrayList<>(currentProject.getMembers());
+            reloadMembers();
         } else {
-            FacesContext.getCurrentInstance().addMessage(null,
-                    new FacesMessage(FacesMessage.SEVERITY_ERROR, "Error", "Cannot remove this member (owner cannot be removed)"));
+            addErrorMessage("שגיאה", "לא ניתן להסיר חבר זה (לא ניתן להסיר את הבעלים)");
         }
     }
 
@@ -155,15 +155,22 @@ public class SettingsBean implements Serializable {
     public void saveProject() {
         if (currentProject == null) return;
 
-        projectService.updateProject(currentProject, authBean.getCurrentUser());
+        projectService.updateProject(currentProject, getAuthBean().getCurrentUser());
 
-        FacesContext.getCurrentInstance().addMessage(null,
-                new FacesMessage(FacesMessage.SEVERITY_INFO, "Success", "Project details updated successfully"));
+        addInfoMessage("הצלחה", "פרטי הפרויקט עודכנו בהצלחה");
+    }
+
+    /**
+     * Reloads the project from the database and refreshes the members list.
+     */
+    private void reloadMembers() {
+        currentProject = projectService.findById(projectId).orElse(null);
+        members = (currentProject != null) ? new ArrayList<>(currentProject.getMembers()) : new ArrayList<>();
     }
 
     // Getters & Setters
     public Project getCurrentProject() { return currentProject; }
     public List<User> getMembers() { return members; }
-    public User getSelectedUser() { return selectedUser; }
-    public void setSelectedUser(User selectedUser) { this.selectedUser = selectedUser; }
+    public List<User> getSelectedUsers() { return selectedUsers; }
+    public void setSelectedUsers(List<User> selectedUsers) { this.selectedUsers = selectedUsers; }
 }

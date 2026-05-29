@@ -12,16 +12,8 @@
 <h:head>
     <title>#{projectBean.currentProject != null ? projectBean.currentProject.name : 'פרויקט'} - לוחות</title>
     <link href="https://fonts.googleapis.com/css2?family=Inter:wght@400;600;700;800&amp;display=swap" rel="stylesheet" />
+    <h:outputStylesheet library="css" name="common.css" />
     <style type="text/css">
-        * { margin: 0; padding: 0; box-sizing: border-box; }
-
-        body {
-            font-family: 'Inter', sans-serif;
-            background: #f5f5f7;
-            min-height: 100vh;
-            direction: rtl;
-        }
-
         .project-container {
             max-width: 960px;
             margin: 0 auto;
@@ -36,11 +28,6 @@
             padding: 28px 36px;
             margin-bottom: 28px;
             animation: fadeIn 0.4s ease-out;
-        }
-
-        @keyframes fadeIn {
-            from { opacity: 0; transform: translateY(12px); }
-            to { opacity: 1; transform: translateY(0); }
         }
 
         .header-top {
@@ -66,7 +53,7 @@
             margin-top: 4px;
         }
 
-        /* ===== Buttons ===== */
+        /* ===== Nav Buttons ===== */
         .nav-buttons {
             display: flex;
             gap: 8px;
@@ -74,69 +61,18 @@
         }
 
         .btn-pill {
-            padding: 10px 20px !important;
-            border: none !important;
-            border-radius: 50px !important;
-            font-weight: 600 !important;
-            font-family: 'Inter', sans-serif !important;
-            font-size: 0.88em !important;
-            cursor: pointer !important;
-            transition: all 0.2s ease !important;
             text-decoration: none !important;
             display: inline-flex !important;
             align-items: center !important;
             gap: 6px !important;
         }
 
-        .btn-purple {
-            background: linear-gradient(135deg, #9b59b6 0%, #8e44ad 100%) !important;
-            color: #fff !important;
-        }
-
-        .btn-purple:hover {
-            transform: translateY(-1px) !important;
-            box-shadow: 0 4px 16px rgba(155, 89, 182, 0.3) !important;
-        }
-
-        .btn-ghost {
-            background: #f5f5f7 !important;
-            color: #555 !important;
-        }
-
-        .btn-ghost:hover {
-            background: #ececee !important;
-        }
-
-        .btn-warn {
-            background: #fff8e1 !important;
-            color: #f59e0b !important;
-        }
-
-        .btn-warn:hover {
-            background: #fef3c7 !important;
-        }
-
-        .btn-danger {
-            background: #f5f5f7 !important;
-            color: #c0392b !important;
-        }
-
-        .btn-danger:hover {
-            background: #fdecea !important;
-        }
-
-        /* ===== Section Title ===== */
+        /* ===== Section Row ===== */
         .section-row {
             display: flex;
             justify-content: space-between;
             align-items: center;
             margin-bottom: 16px;
-        }
-
-        .section-title {
-            font-size: 1.15em;
-            font-weight: 700;
-            color: #1a1a2e;
         }
 
         /* ===== Board Cards ===== */
@@ -226,42 +162,15 @@
             font-weight: 600;
         }
 
-        /* ===== Dialog Overrides ===== */
-        .form-group {
-            margin-bottom: 16px;
-        }
-
-        .form-group label {
-            display: block;
-            font-size: 0.88em;
-            font-weight: 600;
-            color: #555;
-            margin-bottom: 6px;
-        }
-
+        /* ===== Dialog form-group input override ===== */
         .form-group .ui-inputfield,
         .form-group input[type="text"],
         .form-group textarea {
-            width: 100% !important;
             padding: 12px 16px !important;
-            border: 1.5px solid #e8e8ec !important;
-            border-radius: 50px !important;
-            background: #fafafc !important;
-            font-size: 0.95em !important;
-            font-family: 'Inter', sans-serif !important;
-            color: #333 !important;
-            outline: none !important;
-            transition: border-color 0.2s ease !important;
-        }
-
-        .form-group textarea,
-        .form-group .ui-inputtextarea {
-            border-radius: 16px !important;
         }
 
         .form-group .ui-inputfield:focus {
-            border-color: #9b59b6 !important;
-            box-shadow: 0 0 0 3px rgba(155, 89, 182, 0.12) !important;
+            transition: border-color 0.2s ease !important;
         }
     </style>
 </h:head>
@@ -281,7 +190,7 @@
                     </div>
 
                     <div class="nav-buttons">
-                        <p:button value="Activity Log" icon="pi pi-history" styleClass="btn-pill btn-warn"
+                        <p:button value="יומן פעילות" icon="pi pi-history" styleClass="btn-pill btn-warn"
                             outcome="activity">
                             <f:param name="projectId" value="#{projectBean.projectId}" />
                         </p:button>
@@ -291,7 +200,7 @@
                             <f:param name="projectId" value="#{projectBean.projectId}" />
                         </p:button>
 
-                        <p:commandButton value="Dashboard" icon="pi pi-arrow-right" styleClass="btn-pill btn-ghost"
+                        <p:commandButton value="דשבורד" icon="pi pi-arrow-right" styleClass="btn-pill btn-ghost"
                             action="dashboard?faces-redirect=true" />
 
                         <p:commandButton value="התנתק" icon="pi pi-sign-out" styleClass="btn-pill btn-danger"
@@ -300,7 +209,7 @@
                 </div>
             </div>
 
-            <p:growl id="messages" showDetail="true" life="3000" />
+            <p:growl id="messages" showDetail="true" showSummary="false" life="3000" />
 
             <h:panelGroup id="boardsList" layout="block">
                 <!-- Boards Section -->

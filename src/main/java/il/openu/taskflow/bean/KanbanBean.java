@@ -10,30 +10,26 @@ import il.openu.taskflow.repository.TaskRepository;
 import il.openu.taskflow.repository.UserRepository;
 import il.openu.taskflow.exception.UnauthorizedException;
 import jakarta.annotation.PostConstruct;
-import jakarta.faces.application.FacesMessage;
 import jakarta.faces.context.FacesContext;
-import jakarta.faces.component.UIComponent;
 import jakarta.faces.view.ViewScoped;
 import jakarta.inject.Inject;
 import jakarta.inject.Named;
 import jakarta.persistence.EntityNotFoundException;
 
-
-import java.io.Serializable;
+import java.time.LocalDateTime;
 import java.util.ArrayList;
 import java.util.List;
+import java.util.Map;
+import java.util.stream.Stream;
 
 @Named
 @ViewScoped
-public class KanbanBean implements Serializable {
+public class KanbanBean extends BaseBean {
 
-    private static final long serialVersionUID = 1L;
 
     @Inject
     private TaskService taskService;
 
-    @Inject
-    private AuthBean authBean;
 
     @Inject
     private BoardRepository boardRepository;
@@ -57,6 +53,8 @@ public class KanbanBean implements Serializable {
     private String newTaskTitle;
     private String newTaskDescription;
     private Task.TaskStatus newTaskStatus = Task.TaskStatus.TODO;
+    private LocalDateTime newTaskDueDate;
+    private Long newTaskAssigneeId;
 
     private Task selectedTask;
     private Long selectedAssigneeId;
@@ -87,23 +85,20 @@ public class KanbanBean implements Serializable {
                 currentBoard = boardRepository.findById(currentBoardId).orElse(null);
             }
         } else {
-            todoTasks = new ArrayList<>();
-            inProgressTasks = new ArrayList<>();
-            doneTasks = new ArrayList<>();
+            todoTasks = List.of();
+            inProgressTasks = List.of();
+            doneTasks = List.of();
             currentBoard = null;
         }
     }
 
     public void createNewTask() {
         if (currentBoardId == null || currentBoardId <= 0 || newTaskTitle == null || newTaskTitle.trim().isEmpty()) {
-            FacesContext.getCurrentInstance().addMessage(null,
-                    new FacesMessage(FacesMessage.SEVERITY_ERROR, "Error", "Task title is required and board must be selected"));
+            addErrorMessage("שגיאה", "כותרת המשימה נדרשת ויש לבחור לוח");
             return;
         }
 
-        if (authBean.getCurrentUser() == null) {
-            FacesContext.getCurrentInstance().addMessage(null,
-                    new FacesMessage(FacesMessage.SEVERITY_ERROR, "Error", "User not authenticated"));
+        if (getAuthenticatedUser() == null) {
             return;
         }
 
@@ -113,37 +108,36 @@ public class KanbanBean implements Serializable {
                     newTaskDescription != null ? newTaskDescription.trim() : "",
                     newTaskStatus != null ? newTaskStatus : Task.TaskStatus.TODO,
                     currentBoardId,
-                    authBean.getCurrentUser().getId(),
-                    null
+                    getAuthBean().getCurrentUser().getId(),
+                    newTaskAssigneeId,
+                    newTaskDueDate
             );
 
-            FacesContext.getCurrentInstance().addMessage(null,
-                    new FacesMessage(FacesMessage.SEVERITY_INFO, "Task Created",
-                            "Task '" + newTaskTitle + "' created successfully"));
+            addInfoMessage("משימה נוצרה", "המשימה '" + newTaskTitle + "' נוצרה בהצלחה");
 
             newTaskTitle = null;
             newTaskDescription = null;
             newTaskStatus = Task.TaskStatus.TODO;
+            newTaskDueDate = null;
+            newTaskAssigneeId = null;
             loadTasks();
-        } catch (EntityNotFoundException | UnauthorizedException e) {
-            FacesContext.getCurrentInstance().addMessage(null,
-                    new FacesMessage(FacesMessage.SEVERITY_ERROR, "Error", "Failed to create task: " + e.getMessage()));
+        } catch (EntityNotFoundException | UnauthorizedException | IllegalArgumentException e) {
+            addErrorMessage("שגיאה", "יצירת המשימה נכשלה: " + e.getMessage());
         }
     }
 
     public void onTaskDropFromJS() {
-        if (authBean.getCurrentUser() == null) {
-            FacesContext.getCurrentInstance().addMessage(null,
-                    new FacesMessage(FacesMessage.SEVERITY_ERROR, "Error", "User not authenticated"));
+        if (getAuthenticatedUser() == null) {
             return;
         }
 
-        String taskIdStr = FacesContext.getCurrentInstance().getExternalContext().getRequestParameterMap().get("taskId");
-        String newStatusStr = FacesContext.getCurrentInstance().getExternalContext().getRequestParameterMap().get("newStatus");
+        Map<String, String> params = FacesContext.getCurrentInstance()
+                .getExternalContext().getRequestParameterMap();
+        String taskIdStr = params.get("taskId");
+        String newStatusStr = params.get("newStatus");
 
         if (taskIdStr == null || newStatusStr == null) {
-            FacesContext.getCurrentInstance().addMessage(null,
-                    new FacesMessage(FacesMessage.SEVERITY_WARN, "Error", "Invalid drop data"));
+            addWarnMessage("שגיאה", "נתוני גרירה לא תקינים");
             return;
         }
 
@@ -153,8 +147,7 @@ public class KanbanBean implements Serializable {
 
             Task existingTask = findTaskById(taskId);
             if (existingTask == null) {
-                 FacesContext.getCurrentInstance().addMessage(null,
-                    new FacesMessage(FacesMessage.SEVERITY_ERROR, "Error", "Task not found in view"));
+                 addErrorMessage("שגיאה", "המשימה לא נמצאה בתצוגה");
                  return;
             }
 
@@ -162,40 +155,29 @@ public class KanbanBean implements Serializable {
                 return;
             }
 
-            taskService.moveTask(taskId, newStatus, authBean.getCurrentUser().getId());
+            taskService.moveTask(taskId, newStatus, getAuthBean().getCurrentUser().getId());
             loadTasks();
 
-            FacesContext.getCurrentInstance().addMessage(null,
-                    new FacesMessage(FacesMessage.SEVERITY_INFO, "Task Moved",
-                            "Task '" + existingTask.getTitle() + "' moved to " + newStatus));
+            String hebrewStatus = newStatus == Task.TaskStatus.TODO ? "לביצוע" : (newStatus == Task.TaskStatus.IN_PROGRESS ? "בתהליך" : "הושלם");
+            addInfoMessage("משימה הועברה", "המשימה '" + existingTask.getTitle() + "' הועברה ל-" + hebrewStatus);
         } catch (Exception e) {
-            FacesContext.getCurrentInstance().addMessage(null,
-                    new FacesMessage(FacesMessage.SEVERITY_ERROR, "Error", "Move failed: " + e.getMessage()));
+            addErrorMessage("שגיאה", "העברת המשימה נכשלה: " + e.getMessage());
         }
     }
 
     private Task findTaskById(Long taskId) {
-        for (Task task : todoTasks) {
-            if (task.getId().equals(taskId)) return task;
-        }
-        for (Task task : inProgressTasks) {
-            if (task.getId().equals(taskId)) return task;
-        }
-        for (Task task : doneTasks) {
-            if (task.getId().equals(taskId)) return task;
-        }
-        return null;
+        return Stream.of(todoTasks, inProgressTasks, doneTasks)
+                .flatMap(List::stream)
+                .filter(t -> t.getId().equals(taskId))
+                .findFirst()
+                .orElse(null);
     }
 
 
 
     public void viewTask(Task task) {
         this.selectedTask = task;
-        if (task.getAssignee() != null) {
-            this.selectedAssigneeId = task.getAssignee().getId();
-        } else {
-            this.selectedAssigneeId = null;
-        }
+        this.selectedAssigneeId = (task.getAssignee() != null) ? task.getAssignee().getId() : null;
         this.selectedTaskComments = commentRepository.findByTaskId(task.getId());
         this.newCommentText = "";
     }
@@ -220,24 +202,25 @@ public class KanbanBean implements Serializable {
             selectedTask.setAssignee(null);
         }
 
-        taskService.updateTask(selectedTask, authBean.getCurrentUser(), oldAssigneeId);
-        FacesContext.getCurrentInstance().addMessage(null,
-                new FacesMessage(FacesMessage.SEVERITY_INFO, "Success", "Task updated successfully"));
-        loadTasks();
+        try {
+            taskService.updateTask(selectedTask, getAuthBean().getCurrentUser(), oldAssigneeId);
+            addInfoMessage("הצלחה", "המשימה עודכנה בהצלחה");
+            loadTasks();
+        } catch (IllegalArgumentException e) {
+            addErrorMessage("שגיאה", e.getMessage());
+        }
     }
 
     public void addComment() {
         if (selectedTask == null || newCommentText == null || newCommentText.trim().isEmpty()) return;
 
         try {
-            taskService.addComment(selectedTask.getId(), authBean.getCurrentUser().getId(), newCommentText.trim());
+            taskService.addComment(selectedTask.getId(), getAuthBean().getCurrentUser().getId(), newCommentText.trim());
             this.selectedTaskComments = commentRepository.findByTaskId(selectedTask.getId());
             this.newCommentText = "";
-            FacesContext.getCurrentInstance().addMessage(null,
-                    new FacesMessage(FacesMessage.SEVERITY_INFO, "Success", "Comment added"));
+            addInfoMessage("הצלחה", "התגובה נוספה בהצלחה");
         } catch (Exception e) {
-            FacesContext.getCurrentInstance().addMessage(null,
-                    new FacesMessage(FacesMessage.SEVERITY_ERROR, "Error", "Failed to add comment"));
+            addErrorMessage("שגיאה", "נכשל בהוספת התגובה");
         }
     }
 
@@ -303,6 +286,18 @@ public class KanbanBean implements Serializable {
         this.newTaskDescription = newTaskDescription;
     }
 
+    public LocalDateTime getNewTaskDueDate() {
+        return newTaskDueDate;
+    }
+
+    public void setNewTaskDueDate(LocalDateTime newTaskDueDate) {
+        this.newTaskDueDate = newTaskDueDate;
+    }
+
+    public LocalDateTime getMinDueDate() {
+        return LocalDateTime.now();
+    }
+
     public Task.TaskStatus getNewTaskStatus() {
         return newTaskStatus;
     }
@@ -333,5 +328,13 @@ public class KanbanBean implements Serializable {
 
     public List<Comment> getSelectedTaskComments() {
         return selectedTaskComments;
+    }
+
+    public Long getNewTaskAssigneeId() {
+        return newTaskAssigneeId;
+    }
+
+    public void setNewTaskAssigneeId(Long newTaskAssigneeId) {
+        this.newTaskAssigneeId = newTaskAssigneeId;
     }
 }
