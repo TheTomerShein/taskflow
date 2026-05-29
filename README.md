@@ -85,7 +85,7 @@ A default project, board, and sample tasks are also created.
 
 ## Running Locally (Development)
 
-### Option A: Payara Server (Recommended for consistency)
+### Payara Server (Recommended for consistency)
 1. Create the database (see above)
 2. Build the project:
    ```bash
