@@ -1,36 +1,32 @@
 <?xml version="1.0" encoding="UTF-8"?>
 <!DOCTYPE html>
-<html xmlns="http://www.w3.org/1999/xhtml"
-      xmlns:h="jakarta.faces.html"
-      xmlns:f="jakarta.faces.core"
-      xmlns:ui="jakarta.faces.facelets"
-      xmlns:p="http://primefaces.org/ui"
-      xmlns:pt="jakarta.faces.passthrough"
-      xmlns:cc="jakarta.faces.composite">
+<html xmlns="http://www.w3.org/1999/xhtml" xmlns:h="jakarta.faces.html" xmlns:f="jakarta.faces.core"
+    xmlns:ui="jakarta.faces.facelets" xmlns:p="http://primefaces.org/ui" xmlns:pt="jakarta.faces.passthrough"
+    xmlns:cc="jakarta.faces.composite">
 
 <cc:interface>
-    <cc:attribute name="columnId"       required="true"  type="java.lang.String" />
-    <cc:attribute name="containerId"    required="true"  type="java.lang.String" />
-    <cc:attribute name="headerClass"    required="true"  type="java.lang.String" />
-    <cc:attribute name="headerLabel"    required="true"  type="java.lang.String" />
-    <cc:attribute name="badgeStyle"     required="true"  type="java.lang.String" />
-    <cc:attribute name="tasks"          required="true" />
-    <cc:attribute name="statusCss"      required="true"  type="java.lang.String" />
+    <cc:attribute name="columnId" required="true" type="java.lang.String" />
+    <cc:attribute name="containerId" required="true" type="java.lang.String" />
+    <cc:attribute name="headerClass" required="true" type="java.lang.String" />
+    <cc:attribute name="headerLabel" required="true" type="java.lang.String" />
+    <cc:attribute name="badgeStyle" required="true" type="java.lang.String" />
+    <cc:attribute name="tasks" required="true" />
+    <cc:attribute name="statusCss" required="true" type="java.lang.String" />
     <cc:attribute name="statusBadgeClass" required="true" type="java.lang.String" />
-    <cc:attribute name="statusBadgeText"  required="true" type="java.lang.String" />
-    <cc:attribute name="statusIndex"    required="true"  type="java.lang.Integer" />
-    <cc:attribute name="plusBtnStyle"   required="true"  type="java.lang.String" />
-    <cc:attribute name="emptyText"      required="true"  type="java.lang.String" />
+    <cc:attribute name="statusBadgeText" required="true" type="java.lang.String" />
+    <cc:attribute name="statusIndex" required="true" type="java.lang.Integer" />
+    <cc:attribute name="plusBtnStyle" required="true" type="java.lang.String" />
+    <cc:attribute name="emptyText" required="true" type="java.lang.String" />
 </cc:interface>
 
 <cc:implementation>
     <p:outputPanel id="#{cc.attrs.columnId}" layout="block" styleClass="kanban-column">
         <div class="kanban-column-header #{cc.attrs.headerClass}">
             <span>
-                #{cc.attrs.headerLabel}
-                <span class="badge" style="#{cc.attrs.badgeStyle}">
-                    #{cc.attrs.tasks.size()}
-                </span>
+                <h:outputText value="#{cc.attrs.headerLabel}" />
+                <h:panelGroup styleClass="badge" pt:style="#{cc.attrs.badgeStyle}">
+                    <h:outputText value="#{cc.attrs.tasks.size()}" />
+                </h:panelGroup>
             </span>
             <p:commandButton icon="pi pi-plus" styleClass="#{cc.attrs.plusBtnStyle}"
                 actionListener="#{kanbanBean.setNewTaskStatus(kanbanBean.availableStatuses[cc.attrs.statusIndex])}"
@@ -38,8 +34,7 @@
         </div>
         <div id="#{cc.attrs.containerId}" class="column-tasks">
             <ui:repeat value="#{cc.attrs.tasks}" var="task" varStatus="loop">
-                <h:panelGroup layout="block" styleClass="task-card #{cc.attrs.statusCss}"
-                    pt:data-task-id="#{task.id}">
+                <h:panelGroup layout="block" styleClass="task-card #{cc.attrs.statusCss}" pt:data-task-id="#{task.id}">
                     <f:attribute name="taskId" value="#{task.id}" />
                     <div class="task-title">#{task.title}</div>
                     <div class="task-desc">
@@ -56,9 +51,8 @@
                         </div>
                         <span class="status-badge #{cc.attrs.statusBadgeClass}">#{cc.attrs.statusBadgeText}</span>
                         <p:commandButton icon="pi pi-eye" styleClass="ui-button-info ui-button-small"
-                            actionListener="#{kanbanBean.viewTask(task)}"
-                            oncomplete="PF('taskDetailDialog').show()" update=":taskDetailDialog"
-                            process="@this" />
+                            actionListener="#{kanbanBean.viewTask(task)}" oncomplete="PF('taskDetailDialog').show()"
+                            update=":taskDetailDialog" process="@this" />
                     </div>
                 </h:panelGroup>
             </ui:repeat>

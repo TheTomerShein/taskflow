@@ -3,6 +3,12 @@ package il.openu.taskflow.entity;
 import jakarta.persistence.*;
 import java.time.LocalDateTime;
 
+/**
+ * Entity representing an audit log entry for various activities within the
+ * system.
+ * Captures the action type, the user who performed it, and the associated
+ * project, board, or task.
+ */
 @Entity
 @Table(name = "activity_logs")
 public class ActivityLog {
@@ -40,7 +46,9 @@ public class ActivityLog {
     @Column(name = "updated_at", nullable = false)
     private LocalDateTime updatedAt;
 
-    // Enum for all possible actions
+    /**
+     * Enumeration of all possible auditable actions.
+     */
     public enum ActionType {
         PROJECT_CREATED,
         PROJECT_UPDATED,
@@ -55,10 +63,21 @@ public class ActivityLog {
         DUE_DATE_CHANGED
     }
 
+    /**
+     * Default constructor required by JPA.
+     */
     public ActivityLog() {
     }
 
-    // Simple constructor for easy use
+    /**
+     * Constructs a new ActivityLog without a specific board or task (e.g.,
+     * Project-level actions).
+     *
+     * @param project    the project associated with the action
+     * @param user       the user who performed the action
+     * @param actionType the type of action performed
+     * @param details    additional textual details about the action
+     */
     public ActivityLog(Project project, User user, ActionType actionType, String details) {
         this.project = project;
         this.user = user;
@@ -66,7 +85,16 @@ public class ActivityLog {
         this.details = details;
     }
 
-    // Constructor with Board
+    /**
+     * Constructs a new ActivityLog with an associated board (e.g., Board-level
+     * actions).
+     *
+     * @param project    the parent project
+     * @param board      the board associated with the action
+     * @param user       the user who performed the action
+     * @param actionType the type of action performed
+     * @param details    additional textual details about the action
+     */
     public ActivityLog(Project project, Board board, User user, ActionType actionType, String details) {
         this.project = project;
         this.board = board;
@@ -75,13 +103,18 @@ public class ActivityLog {
         this.details = details;
     }
 
-    // These methods run automatically when saving or updating
+    /**
+     * Sets the creation and update timestamps before the entity is persisted.
+     */
     @PrePersist
     protected void onCreate() {
         createdAt = LocalDateTime.now();
         updatedAt = createdAt;
     }
 
+    /**
+     * Updates the update timestamp before the entity is modified.
+     */
     @PreUpdate
     protected void onUpdate() {
         updatedAt = LocalDateTime.now();
@@ -112,13 +145,21 @@ public class ActivityLog {
         this.user = user;
     }
 
-    public Task getTask() { return task; }
+    public Task getTask() {
+        return task;
+    }
 
-    public void setTask(Task task) { this.task = task; }
+    public void setTask(Task task) {
+        this.task = task;
+    }
 
-    public Board getBoard() { return board; }
+    public Board getBoard() {
+        return board;
+    }
 
-    public void setBoard(Board board) { this.board = board; }
+    public void setBoard(Board board) {
+        this.board = board;
+    }
 
     public ActionType getActionType() {
         return actionType;

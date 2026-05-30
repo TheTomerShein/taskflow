@@ -13,6 +13,10 @@ import jakarta.ws.rs.core.MediaType;
 import jakarta.ws.rs.core.Response;
 import java.util.Set;
 
+/**
+ * RESTful endpoint for managing and retrieving Project-related resources.
+ * Exposes operations via the /api/projects path.
+ */
 @Path("/projects")
 public class ProjectResource {
 
@@ -22,6 +26,13 @@ public class ProjectResource {
     @Inject
     private AuthBean authBean;
 
+    /**
+     * Retrieves all boards associated with a specific project.
+     * Ensures the requesting user is authenticated and authorized (owner or member).
+     *
+     * @param id the ID of the project
+     * @return a JAX-RS Response containing the boards in JSON format, or an error status
+     */
     @GET
     @Path("/{id}/boards")
     @Produces(MediaType.APPLICATION_JSON)

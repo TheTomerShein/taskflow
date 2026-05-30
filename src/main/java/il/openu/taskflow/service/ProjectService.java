@@ -176,6 +176,7 @@ public class ProjectService {
 
     /**
      * Lightweight holder for a fetched Project and User pair.
+     * Useful for operations that require both entities to be validated and loaded.
      */
     private static class ProjectAndUser {
         private final Project project;
@@ -192,7 +193,11 @@ public class ProjectService {
 
     /**
      * Fetches a Project and User by their IDs.
-     * Returns null if either entity is not found.
+     * Returns null if either entity is not found in the database.
+     * 
+     * @param projectId the project ID
+     * @param userId the user ID
+     * @return a ProjectAndUser containing both entities, or null if missing
      */
     private ProjectAndUser fetchProjectAndUser(Long projectId, Long userId) {
         Project project = projectRepository.findById(projectId).orElse(null);

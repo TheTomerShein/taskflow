@@ -22,14 +22,16 @@ import java.util.List;
 import java.util.Map;
 import java.util.stream.Stream;
 
+/**
+ * JSF Backing Bean for the Kanban board view.
+ * Handles tasks state, drag-and-drop operations, task creation, and updates.
+ */
 @Named
 @ViewScoped
 public class KanbanBean extends BaseBean {
 
-
     @Inject
     private TaskService taskService;
-
 
     @Inject
     private BoardRepository boardRepository;
@@ -61,6 +63,10 @@ public class KanbanBean extends BaseBean {
     private String newCommentText;
     private List<Comment> selectedTaskComments = new ArrayList<>();
 
+    /**
+     * Initializes the bean.
+     * Called automatically after dependency injection.
+     */
     @PostConstruct
     public void init() {
         // Note: currentBoardId is set by the f:viewParam setter AFTER PostConstruct.
@@ -92,6 +98,11 @@ public class KanbanBean extends BaseBean {
         }
     }
 
+    /**
+     * Creates a new task for the currently selected board.
+     * Validates input, interacts with the TaskService, and refreshes the board upon
+     * success.
+     */
     public void createNewTask() {
         if (currentBoardId == null || currentBoardId <= 0 || newTaskTitle == null || newTaskTitle.trim().isEmpty()) {
             addErrorMessage("שגיאה", "כותרת המשימה נדרשת ויש לבחור לוח");
@@ -110,8 +121,7 @@ public class KanbanBean extends BaseBean {
                     currentBoardId,
                     getAuthBean().getCurrentUser().getId(),
                     newTaskAssigneeId,
-                    newTaskDueDate
-            );
+                    newTaskDueDate);
 
             addInfoMessage("משימה נוצרה", "המשימה '" + newTaskTitle + "' נוצרה בהצלחה");
 
@@ -126,6 +136,12 @@ public class KanbanBean extends BaseBean {
         }
     }
 
+    /**
+     * Handles the drag-and-drop task movement triggered from the client-side
+     * JavaScript.
+     * Reads request parameters for task ID and new status, updates the backend, and
+     * refreshes the lists.
+     */
     public void onTaskDropFromJS() {
         if (getAuthenticatedUser() == null) {
             return;
@@ -147,8 +163,8 @@ public class KanbanBean extends BaseBean {
 
             Task existingTask = findTaskById(taskId);
             if (existingTask == null) {
-                 addErrorMessage("שגיאה", "המשימה לא נמצאה בתצוגה");
-                 return;
+                addErrorMessage("שגיאה", "המשימה לא נמצאה בתצוגה");
+                return;
             }
 
             if (newStatus.equals(existingTask.getStatus())) {
@@ -158,13 +174,20 @@ public class KanbanBean extends BaseBean {
             taskService.moveTask(taskId, newStatus, getAuthBean().getCurrentUser().getId());
             loadTasks();
 
-            String hebrewStatus = newStatus == Task.TaskStatus.TODO ? "לביצוע" : (newStatus == Task.TaskStatus.IN_PROGRESS ? "בתהליך" : "הושלם");
+            String hebrewStatus = newStatus == Task.TaskStatus.TODO ? "לביצוע"
+                    : (newStatus == Task.TaskStatus.IN_PROGRESS ? "בתהליך" : "הושלם");
             addInfoMessage("משימה הועברה", "המשימה '" + existingTask.getTitle() + "' הועברה ל-" + hebrewStatus);
         } catch (Exception e) {
             addErrorMessage("שגיאה", "העברת המשימה נכשלה: " + e.getMessage());
         }
     }
 
+    /**
+     * Helper to find a task by its ID within the currently loaded lists.
+     *
+     * @param taskId the ID of the task
+     * @return the Task object if found, or null otherwise
+     */
     private Task findTaskById(Long taskId) {
         return Stream.of(todoTasks, inProgressTasks, doneTasks)
                 .flatMap(List::stream)
@@ -173,8 +196,12 @@ public class KanbanBean extends BaseBean {
                 .orElse(null);
     }
 
-
-
+    /**
+     * Prepares a task to be viewed in a detail dialog.
+     * Loads the task comments and sets up the selected task state.
+     *
+     * @param task the task to view
+     */
     public void viewTask(Task task) {
         this.selectedTask = task;
         this.selectedAssigneeId = (task.getAssignee() != null) ? task.getAssignee().getId() : null;
@@ -182,6 +209,12 @@ public class KanbanBean extends BaseBean {
         this.newCommentText = "";
     }
 
+    /**
+     * Retrieves a list of members belonging to the current board's project.
+     * Useful for dropdown menus (e.g., assigning a task).
+     *
+     * @return a list of User objects who are members of the project
+     */
     public List<il.openu.taskflow.entity.User> getProjectMembers() {
         if (currentBoard != null && currentBoard.getProject() != null) {
             return new ArrayList<>(currentBoard.getProject().getMembers());
@@ -189,8 +222,13 @@ public class KanbanBean extends BaseBean {
         return new ArrayList<>();
     }
 
+    /**
+     * Updates an existing task with newly modified properties (e.g., assignee).
+     * Interacts with the TaskService to persist changes.
+     */
     public void updateTask() {
-        if (selectedTask == null) return;
+        if (selectedTask == null)
+            return;
 
         // Capture old assignee ID before making changes (for change detection)
         Long oldAssigneeId = (selectedTask.getAssignee() != null) ? selectedTask.getAssignee().getId() : null;
@@ -211,8 +249,12 @@ public class KanbanBean extends BaseBean {
         }
     }
 
+    /**
+     * Adds a new comment to the currently selected task.
+     */
     public void addComment() {
-        if (selectedTask == null || newCommentText == null || newCommentText.trim().isEmpty()) return;
+        if (selectedTask == null || newCommentText == null || newCommentText.trim().isEmpty())
+            return;
 
         try {
             taskService.addComment(selectedTask.getId(), getAuthBean().getCurrentUser().getId(), newCommentText.trim());
@@ -224,6 +266,11 @@ public class KanbanBean extends BaseBean {
         }
     }
 
+    /**
+     * Navigates back to the parent project page of the current board.
+     *
+     * @return JSF navigation string
+     */
     public String goToProject() {
         if (currentBoard != null && currentBoard.getProject() != null) {
             return "project?faces-redirect=true&projectId=" + currentBoard.getProject().getId();
@@ -231,6 +278,11 @@ public class KanbanBean extends BaseBean {
         return "dashboard?faces-redirect=true";
     }
 
+    /**
+     * Sets the status for a newly created task (from UI selection).
+     *
+     * @param status the selected TaskStatus
+     */
     public void setNewTaskStatus(Task.TaskStatus status) {
         this.newTaskStatus = status;
     }
@@ -267,7 +319,8 @@ public class KanbanBean extends BaseBean {
 
     public String getCurrentProjectName() {
         return (currentBoard != null && currentBoard.getProject() != null)
-                ? currentBoard.getProject().getName() : "";
+                ? currentBoard.getProject().getName()
+                : "";
     }
 
     public String getNewTaskTitle() {

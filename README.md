@@ -137,5 +137,3 @@ src/main/java/.../util/
 Open University of Israel — Advanced Java Workshop
 
 ---
-
-*This README was written to make the review process as smooth as possible.*

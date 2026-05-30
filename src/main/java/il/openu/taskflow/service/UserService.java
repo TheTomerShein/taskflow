@@ -51,6 +51,9 @@ public class UserService implements Serializable {
 
     /**
      * Find user by ID.
+     * 
+     * @param id the user ID
+     * @return an Optional containing the user if found, or empty otherwise
      */
     public Optional<User> findById(Long id) {
         return userRepository.findById(id);

@@ -10,6 +10,10 @@ import jakarta.inject.Named;
 import jakarta.servlet.http.HttpSession;
 import java.io.Serializable;
 
+/**
+ * JSF Backing Bean for authentication operations.
+ * Handles user login, registration, and logout flows.
+ */
 @Named
 @SessionScoped
 public class AuthBean implements Serializable {
@@ -23,6 +27,13 @@ public class AuthBean implements Serializable {
     private User currentUser;
 
     // ==================== LOGIN ====================
+    /**
+     * Authenticates the user with the provided username and password.
+     * On success, sets the current user in session and redirects to the dashboard.
+     * On failure, displays an error message.
+     *
+     * @return a navigation string for JSF redirect, or null to stay on the same page
+     */
     public String login() {
         User user = userService.login(username, password);
 
@@ -47,6 +58,13 @@ public class AuthBean implements Serializable {
     }
 
     // ==================== REGISTER ====================
+    /**
+     * Registers a new user with the provided details.
+     * Performs basic validation on email format and password strength.
+     * On success, displays an info message and redirects to the login page.
+     *
+     * @return a navigation string for JSF redirect, or null if registration fails
+     */
     public String register() {
         // Email validation
         if (email == null || !email.matches("^[a-zA-Z0-9_+&*-]+(?:\\.[a-zA-Z0-9_+&*-]+)*@(?:[a-zA-Z0-9-]+\\.)+[a-zA-Z]{2,7}$")) {
@@ -94,6 +112,12 @@ public class AuthBean implements Serializable {
         }
     }
 
+    /**
+     * Logs out the current user by invalidating the HTTP session.
+     * Redirects to the login page.
+     *
+     * @return a navigation string for JSF redirect to login
+     */
     public String logout() {
         HttpSession session = (HttpSession) FacesContext.getCurrentInstance()
                 .getExternalContext().getSession(false);
@@ -105,6 +129,13 @@ public class AuthBean implements Serializable {
         return "login?faces-redirect=true";
     }
     // ==================== HELPERS ====================
+    /**
+     * Helper method to add a JSF FacesMessage to the context.
+     *
+     * @param severity the severity level (INFO, ERROR, etc.)
+     * @param summary a brief summary of the message
+     * @param detail detailed information about the message
+     */
     private void addMessage(FacesMessage.Severity severity, String summary, String detail) {
         FacesContext.getCurrentInstance().addMessage(null,
                 new FacesMessage(severity, summary, detail));
